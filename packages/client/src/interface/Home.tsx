@@ -19,6 +19,7 @@ import {
 
 import MdAddCircle from "@material-design-icons/svg/filled/add_circle.svg?component-solid";
 import MdFavorite from "@material-design-icons/svg/filled/favorite.svg?component-solid";
+import MdGroups3 from "@material-design-icons/svg/filled/groups_3.svg?component-solid";
 import MdHelpCenter from "@material-design-icons/svg/filled/help_center.svg?component-solid";
 import MdHome from "@material-design-icons/svg/filled/home.svg?component-solid";
 import MdContentCopy from "@material-design-icons/svg/filled/content_copy.svg?component-solid";
@@ -30,6 +31,11 @@ import { HeaderIcon } from "./common/CommonHeader";
 
 // >>> TROQUE AQUI pela sua chave Pix (CPF, telefone, email ou aleatoria)
 const CHAVE_PIX = "cole-sua-chave-pix-aqui";
+
+// >>> TROQUE AQUI pelo codigo do convite permanente do servidor principal.
+// So o codigo, nao a URL inteira. Ex: se o link e /invite/AbC123, use "AbC123".
+// Enquanto estiver com o valor de exemplo, o botao fica escondido.
+const CONVITE_SERVIDOR = "cole-o-codigo-do-convite-aqui";
 
 /**
  * Base layout of the home page (i.e. the header/background)
@@ -100,6 +106,7 @@ export function HomePage() {
   const instance = useInstance();
 
   const [guiaAberto, setGuiaAberto] = createSignal(false);
+  const conviteConfigurado = CONVITE_SERVIDOR !== "cole-o-codigo-do-convite-aqui";
 
   return (
     <Base>
@@ -120,6 +127,16 @@ export function HomePage() {
         </Column>
         <Buttons>
           <SeparatedColumn>
+            <Show when={conviteConfigurado}>
+              <CategoryButton
+                onClick={() => navigate(`/invite/${CONVITE_SERVIDOR}`)}
+                description="pra conversar com a galera e por aqui >"
+                icon={<MdGroups3 {...iconSize(22)} />}
+              >
+                Entrar no servidor
+              </CategoryButton>
+            </Show>
+
             <CategoryButton
               onClick={() =>
                 openModal({
@@ -182,8 +199,8 @@ export function HomePage() {
             <b style={{ "font-size": "1.1em" }}>Guia rapido</b>
 
             <p>
-              <b>1. Entrar no servidor.</b> Peca o link de convite pro Lucas e
-              abra no navegador. Voce entra na hora.
+              <b>1. Entrar no servidor.</b> Use o botao no fim deste guia (ou o
+              primeiro cartao da tela inicial). Voce entra na hora.
             </p>
             <p>
               <b>2. Conversar por voz.</b> Clique num canal com o icone de
@@ -204,6 +221,23 @@ export function HomePage() {
               <b>5. Instalar como app.</b> No Chrome, menu &rarr; "Instalar".
               Fica com cara de programa, sem aba de navegador.
             </p>
+
+            <Show when={conviteConfigurado}>
+              <div style={{ margin: "18px 0 6px" }}>
+                <Button onPress={() => navigate(`/invite/${CONVITE_SERVIDOR}`)}>
+                  Entrar no servidor
+                </Button>
+                <div
+                  style={{
+                    opacity: "0.55",
+                    "font-size": "0.9em",
+                    "margin-top": "6px",
+                  }}
+                >
+                  pra conversar com a galera e por aqui &gt;
+                </div>
+              </div>
+            </Show>
 
             <p style={{ opacity: "0.6", "margin-bottom": "0" }}>
               Audio em 48 kHz e tela em 1080p, num servidor em Sao Paulo.
