@@ -1,7 +1,5 @@
-import { BiLogosGithub } from "solid-icons/bi";
 import { JSX } from "solid-js";
 
-import { Trans } from "@lingui/solid/macro";
 import { styled } from "styled-system/jsx";
 
 import { Titlebar } from "@revolt/app/interface/desktop/Titlebar";
@@ -10,9 +8,7 @@ import { IconButton, iconSize } from "@revolt/ui";
 
 import MdDarkMode from "@material-design-icons/svg/filled/dark_mode.svg?component-solid";
 
-import background from "./background.jpg";
 import { FlowBase } from "./flows/Flow";
-import bluesky from "./flows/bluesky.svg";
 
 /**
  * Authentication page layout
@@ -44,11 +40,16 @@ const Root = styled("div", {
     paddingBottom: "env(keyboard-inset-height)",
 
     color: "var(--md-sys-color-on-surface)",
-    background: "var(--md-sys-color-surface)",
-    // background: `var(--url)`,
-    // backgroundPosition: "center",
-    // backgroundRepeat: "no-repeat",
-    // backgroundSize: "cover",
+
+    // Fundo em degrade: manchas translucidas por cima da cor do tema,
+    // entao funciona tanto no modo escuro quanto no claro.
+    background: `
+      radial-gradient(900px 520px at 12% -8%, rgba(139, 92, 246, 0.28), transparent 62%),
+      radial-gradient(760px 460px at 88% 4%, rgba(236, 72, 153, 0.20), transparent 58%),
+      radial-gradient(820px 620px at 60% 108%, rgba(56, 189, 248, 0.18), transparent 60%),
+      var(--md-sys-color-surface)
+    `,
+    backgroundAttachment: "fixed",
   },
 });
 
@@ -98,29 +99,6 @@ const NavItems = styled("div", {
 });
 
 /**
- * Link with an icon inside
- */
-const LinkWithIcon = styled("a", {
-  base: { height: "24px" },
-});
-
-/**
- * Middot-like bullet
- */
-const Bullet = styled("div", {
-  base: {
-    height: "5px",
-    width: "5px",
-    background: "grey",
-    borderRadius: "50%",
-
-    md: {
-      display: "none",
-    },
-  },
-});
-
-/**
  * Authentication page
  */
 export function AuthPage(props: { children: JSX.Element }) {
@@ -129,10 +107,7 @@ export function AuthPage(props: { children: JSX.Element }) {
   return (
     <Root>
       <Titlebar />
-      <Base
-        style={{ "--url": `url('${background}')` }}
-        css={{ scrollbar: "hidden" }}
-      >
+      <Base css={{ scrollbar: "hidden" }}>
         <Nav>
           <div />
           <IconButton
@@ -149,32 +124,9 @@ export function AuthPage(props: { children: JSX.Element }) {
         <FlowBase>{props.children}</FlowBase>
         <Nav>
           <NavItems variant="stack">
-            <NavItems>
-              <LinkWithIcon href="https://github.com/stoatchat" target="_blank">
-                <BiLogosGithub size={24} />
-              </LinkWithIcon>
-              <LinkWithIcon
-                href="https://bsky.app/profile/stoat.chat"
-                target="_blank"
-              >
-                <img
-                  src={bluesky}
-                  style={{ height: "22px", "padding-top": "3px" }}
-                />
-              </LinkWithIcon>
-            </NavItems>
-            <Bullet />
-            <NavItems>
-              <a href="https://stoat.chat/about" target="_blank">
-                <Trans>About</Trans>
-              </a>
-              <a href="https://stoat.chat/terms" target="_blank">
-                <Trans>Terms of Service</Trans>
-              </a>
-              <a href="https://stoat.chat/privacy" target="_blank">
-                <Trans>Privacy Policy</Trans>
-              </a>
-            </NavItems>
+            <span style={{ opacity: "0.35", "font-size": "0.85em" }}>
+              Lucascord &middot; nosso canto na internet
+            </span>
           </NavItems>
         </Nav>
       </Base>

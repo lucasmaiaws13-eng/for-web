@@ -170,7 +170,7 @@ export default function Native() {
             </>
           }
         >
-          <Trans>Stoat for Desktop</Trans>
+          <>Lucascord para Desktop</>
         </CategoryButton>
       </CategoryButton.Group>
     </Column>
