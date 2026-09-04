@@ -1,11 +1,15 @@
-<svg width="500" height="94" viewBox="0 0 500 94" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="600" height="100" viewBox="0 0 600 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- textLength + lengthAdjust forcam o texto a caber exatamente no viewBox,
+       independente da fonte que o sistema do usuario tiver. -->
   <text
-    x="0"
-    y="70"
+    x="300"
+    y="72"
+    text-anchor="middle"
+    textLength="576"
+    lengthAdjust="spacingAndGlyphs"
     font-family="Inter, 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif"
-    font-size="74"
+    font-size="72"
     font-weight="800"
-    letter-spacing="-3"
     fill="currentColor"
   >Lucascord</text>
 </svg>

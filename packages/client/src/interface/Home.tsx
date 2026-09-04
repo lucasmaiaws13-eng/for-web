@@ -1,7 +1,6 @@
-import { Match, Show, Switch } from "solid-js";
+import { Match, Show, Switch, createSignal } from "solid-js";
 
 import { Trans } from "@lingui/solid/macro";
-import { PublicChannelInvite } from "stoat.js";
 import { css, cva } from "styled-system/css";
 import { styled } from "styled-system/jsx";
 
@@ -19,15 +18,18 @@ import {
 } from "@revolt/ui";
 
 import MdAddCircle from "@material-design-icons/svg/filled/add_circle.svg?component-solid";
-import MdExplore from "@material-design-icons/svg/filled/explore.svg?component-solid";
-import MdGroups3 from "@material-design-icons/svg/filled/groups_3.svg?component-solid";
+import MdFavorite from "@material-design-icons/svg/filled/favorite.svg?component-solid";
+import MdHelpCenter from "@material-design-icons/svg/filled/help_center.svg?component-solid";
 import MdHome from "@material-design-icons/svg/filled/home.svg?component-solid";
-import MdRateReview from "@material-design-icons/svg/filled/rate_review.svg?component-solid";
+import MdContentCopy from "@material-design-icons/svg/filled/content_copy.svg?component-solid";
 import MdSettings from "@material-design-icons/svg/filled/settings.svg?component-solid";
 
 import Wordmark from "../../public/assets/web/wordmark.svg?component-solid";
 
 import { HeaderIcon } from "./common/CommonHeader";
+
+// >>> TROQUE AQUI pela sua chave Pix (CPF, telefone, email ou aleatoria)
+const CHAVE_PIX = "cole-sua-chave-pix-aqui";
 
 /**
  * Base layout of the home page (i.e. the header/background)
@@ -97,10 +99,7 @@ export function HomePage() {
   const client = useClient();
   const instance = useInstance();
 
-  // check if we're stoat.chat; if so, check if the user is in the Lounge
-  const showLoungeButton = instance.isStoat;
-  const isInLounge =
-    client()!.servers.get("01F7ZSBSFHQ8TA81725KQCSDDP") !== undefined;
+  const [guiaAberto, setGuiaAberto] = createSignal(false);
 
   return (
     <Base>
@@ -128,98 +127,89 @@ export function HomePage() {
                   client: client()!,
                 })
               }
-              description={
-                <Trans>
-                  Invite all of your friends, some cool bots, and throw a big
-                  party.
-                </Trans>
-              }
+              description="Chame a galera e monte um canal novo."
               icon={<MdAddCircle />}
             >
-              <Trans>Create a group or server</Trans>
+              Criar um grupo ou servidor
             </CategoryButton>
-            <Switch fallback={null}>
-              <Match when={showLoungeButton && isInLounge}>
-                <CategoryButton
-                  onClick={() => navigate("/server/01F7ZSBSFHQ8TA81725KQCSDDP")}
-                  description={
-                    <Trans>
-                      You can report issues and discuss improvements with us
-                      directly here.
-                    </Trans>
-                  }
-                  icon={<MdGroups3 />}
-                >
-                  <Trans>Go to the Stoat Lounge</Trans>
-                </CategoryButton>
-              </Match>
-              <Match when={showLoungeButton && !isInLounge}>
-                <CategoryButton
-                  onClick={() => {
-                    client()
-                      .api.get("/invites/Testers")
-                      .then((invite) =>
-                        PublicChannelInvite.from(client(), invite),
-                      )
-                      .then((invite) => openModal({ type: "invite", invite }));
-                  }}
-                  description={
-                    <Trans>
-                      You can report issues and discuss improvements with us
-                      directly here.
-                    </Trans>
-                  }
-                  icon={<MdGroups3 />}
-                >
-                  <Trans>Join the Stoat Lounge</Trans>
-                </CategoryButton>
-              </Match>
-            </Switch>
-          </SeparatedColumn>
-          <SeparatedColumn>
-            <Show when={instance.isStoat}>
-              <CategoryButton
-                onClick={() => navigate("/discover")}
-                description={
-                  <Trans>
-                    Find a community based on your hobbies or interests.
-                  </Trans>
-                }
-                icon={<MdExplore />}
-              >
-                <Trans>Discover Stoat</Trans>
-              </CategoryButton>
-            </Show>
+
             <CategoryButton
-              onClick={() =>
-                openModal({
-                  type: "settings",
-                  config: "user",
-                  context: { page: "feedback" },
-                })
-              }
-              description={
-                <Trans>
-                  Let us know how we can improve our app by giving us feedback.
-                </Trans>
-              }
-              icon={<MdRateReview {...iconSize(22)} />}
+              onClick={() => setGuiaAberto((v) => !v)}
+              description="Primeira vez aqui? Comeca por aqui."
+              icon={<MdHelpCenter {...iconSize(22)} />}
             >
-              <Trans>Give feedback on Stoat</Trans>
+              Como usar o Lucascord
             </CategoryButton>
+          </SeparatedColumn>
+
+          <SeparatedColumn>
             <CategoryButton
               onClick={() => openModal({ type: "settings", config: "user" })}
-              description={
-                <Trans>
-                  You can also click the gear icon in the bottom left.
-                </Trans>
-              }
+              description="Microfone, camera, tema e notificacoes."
               icon={<MdSettings />}
             >
-              <Trans>Open settings</Trans>
+              Abrir configuracoes
+            </CategoryButton>
+
+            <CategoryButton
+              variant="tertiary"
+              onClick={() => {
+                navigator.clipboard
+                  ?.writeText(CHAVE_PIX)
+                  .then(() => alert("Chave Pix copiada! Valeu demais \u2764\ufe0f"))
+                  .catch(() => alert("Chave Pix: " + CHAVE_PIX));
+              }}
+              description="O servidor tem custo mensal. Toda ajuda conta!"
+              icon={<MdFavorite {...iconSize(22)} />}
+            >
+              Me ajude! (copiar Pix)
             </CategoryButton>
           </SeparatedColumn>
         </Buttons>
+
+        <Show when={guiaAberto()}>
+          <div
+            style={{
+              "max-width": "560px",
+              margin: "16px auto 0",
+              padding: "18px 20px",
+              "border-radius": "12px",
+              background: "var(--md-sys-color-surface-container)",
+              "line-height": "1.65",
+              "font-size": "0.95em",
+            }}
+          >
+            <b style={{ "font-size": "1.1em" }}>Guia rapido</b>
+
+            <p>
+              <b>1. Entrar no servidor.</b> Peca o link de convite pro Lucas e
+              abra no navegador. Voce entra na hora.
+            </p>
+            <p>
+              <b>2. Conversar por voz.</b> Clique num canal com o icone de
+              alto-falante. Voce entra automaticamente &mdash; nao precisa
+              chamar ninguem.
+            </p>
+            <p>
+              <b>3. Compartilhar a tela.</b> Ja dentro do canal de voz, use o
+              botao de tela na barra de controles. Da pra escolher a tela toda
+              ou so uma janela, com ou sem o audio do jogo.
+            </p>
+            <p>
+              <b>4. Microfone com problema?</b> Configuracoes &rarr; Audio. Se
+              voce usa fone Bluetooth, prefira o microfone do notebook: o
+              Bluetooth derruba a qualidade do som pros dois lados.
+            </p>
+            <p>
+              <b>5. Instalar como app.</b> No Chrome, menu &rarr; "Instalar".
+              Fica com cara de programa, sem aba de navegador.
+            </p>
+
+            <p style={{ opacity: "0.6", "margin-bottom": "0" }}>
+              Audio em 48 kHz e tela em 1080p, num servidor em Sao Paulo.
+            </p>
+          </div>
+        </Show>
         <Show when={IS_DEV}>
           <Button onPress={() => navigate("/dev")}>
             Open Development Page
