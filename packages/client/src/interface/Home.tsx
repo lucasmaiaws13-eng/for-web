@@ -22,12 +22,11 @@ import MdFavorite from "@material-design-icons/svg/filled/favorite.svg?component
 import MdGroups3 from "@material-design-icons/svg/filled/groups_3.svg?component-solid";
 import MdHelpCenter from "@material-design-icons/svg/filled/help_center.svg?component-solid";
 import MdHome from "@material-design-icons/svg/filled/home.svg?component-solid";
-import MdContentCopy from "@material-design-icons/svg/filled/content_copy.svg?component-solid";
 import MdSettings from "@material-design-icons/svg/filled/settings.svg?component-solid";
 
-import Wordmark from "../../public/assets/web/wordmark.svg?component-solid";
 
 import { HeaderIcon } from "./common/CommonHeader";
+import { GuiaModal, PixModal } from "./LucascordModals";
 
 // >>> TROQUE AQUI pela sua chave Pix (CPF, telefone, email ou aleatoria)
 const CHAVE_PIX = "cole-sua-chave-pix-aqui";
@@ -106,6 +105,7 @@ export function HomePage() {
   const instance = useInstance();
 
   const [guiaAberto, setGuiaAberto] = createSignal(false);
+  const [pixAberto, setPixAberto] = createSignal(false);
   const conviteConfigurado = CONVITE_SERVIDOR !== "cole-o-codigo-do-convite-aqui";
 
   return (
@@ -118,12 +118,21 @@ export function HomePage() {
       </Header>
       <div use:scrollable={{ class: content() }}>
         <Column>
-          <Wordmark
-            class={css({
-              width: "160px",
-              fill: "var(--md-sys-color-on-surface)",
-            })}
-          />
+          <div
+            style={{
+              "font-size": "2.4em",
+              "font-weight": "800",
+              "letter-spacing": "-0.03em",
+              "line-height": "1.1",
+              background:
+                "linear-gradient(115deg, #a78bfa 0%, #f0abfc 45%, #7dd3fc 100%)",
+              "-webkit-background-clip": "text",
+              "background-clip": "text",
+              color: "transparent",
+            }}
+          >
+            Lucascord
+          </div>
         </Column>
         <Buttons>
           <SeparatedColumn>
@@ -170,12 +179,7 @@ export function HomePage() {
 
             <CategoryButton
               variant="tertiary"
-              onClick={() => {
-                navigator.clipboard
-                  ?.writeText(CHAVE_PIX)
-                  .then(() => alert("Chave Pix copiada! Valeu demais \u2764\ufe0f"))
-                  .catch(() => alert("Chave Pix: " + CHAVE_PIX));
-              }}
+              onClick={() => setPixAberto(true)}
               description="O servidor tem custo mensal. Toda ajuda conta!"
               icon={<MdFavorite {...iconSize(22)} />}
             >
@@ -184,66 +188,77 @@ export function HomePage() {
           </SeparatedColumn>
         </Buttons>
 
-        <Show when={guiaAberto()}>
+        <div
+          style={{
+            "max-width": "560px",
+            margin: "4px auto 0",
+            padding: "16px 18px",
+            "border-radius": "14px",
+            "border-inline-start": "4px solid var(--md-sys-color-primary)",
+            background: "var(--md-sys-color-surface-container)",
+            "line-height": "1.6",
+            "font-size": "0.92em",
+          }}
+        >
           <div
             style={{
-              "max-width": "560px",
-              margin: "16px auto 0",
-              padding: "18px 20px",
-              "border-radius": "12px",
-              background: "var(--md-sys-color-surface-container)",
-              "line-height": "1.65",
-              "font-size": "0.95em",
+              "font-weight": "700",
+              "margin-bottom": "8px",
+              display: "flex",
+              "align-items": "center",
+              gap: "8px",
             }}
           >
-            <b style={{ "font-size": "1.1em" }}>Guia rapido</b>
-
-            <p>
-              <b>1. Entrar no servidor.</b> Use o botao no fim deste guia (ou o
-              primeiro cartao da tela inicial). Voce entra na hora.
-            </p>
-            <p>
-              <b>2. Conversar por voz.</b> Clique num canal com o icone de
-              alto-falante. Voce entra automaticamente &mdash; nao precisa
-              chamar ninguem.
-            </p>
-            <p>
-              <b>3. Compartilhar a tela.</b> Ja dentro do canal de voz, use o
-              botao de tela na barra de controles. Da pra escolher a tela toda
-              ou so uma janela, com ou sem o audio do jogo.
-            </p>
-            <p>
-              <b>4. Microfone com problema?</b> Configuracoes &rarr; Audio. Se
-              voce usa fone Bluetooth, prefira o microfone do notebook: o
-              Bluetooth derruba a qualidade do som pros dois lados.
-            </p>
-            <p>
-              <b>5. Instalar como app.</b> No Chrome, menu &rarr; "Instalar".
-              Fica com cara de programa, sem aba de navegador.
-            </p>
-
-            <Show when={conviteConfigurado}>
-              <div style={{ margin: "18px 0 6px" }}>
-                <Button onPress={() => navigate(`/invite/${CONVITE_SERVIDOR}`)}>
-                  Entrar no servidor
-                </Button>
-                <div
-                  style={{
-                    opacity: "0.55",
-                    "font-size": "0.9em",
-                    "margin-top": "6px",
-                  }}
-                >
-                  pra conversar com a galera e por aqui &gt;
-                </div>
-              </div>
-            </Show>
-
-            <p style={{ opacity: "0.6", "margin-bottom": "0" }}>
-              Audio em 48 kHz e tela em 1080p, num servidor em Sao Paulo.
-            </p>
+            <span>🚧</span>
+            <span>Estamos em fase de testes!</span>
           </div>
-        </Show>
+
+          <p style={{ margin: "0 0 10px", opacity: "0.82" }}>
+            Se encontrar qualquer dificuldade, pode reportar pra mim
+            diretamente (Lucas).
+          </p>
+
+          <p style={{ margin: "0 0 10px", opacity: "0.82" }}>
+            Mas seja gentil! Não envie o Lucascord para muitas pessoas
+            diferentes, e evite mandar muitos arquivos muito rápido. Agradeço
+            demais!
+          </p>
+
+          <p style={{ margin: "0 0 12px", opacity: "0.82" }}>
+            Atualmente tenho um custo mensal para manter o app rodando e com
+            boa qualidade. Considere me ajudar!
+          </p>
+
+          <button
+            onClick={() => setPixAberto(true)}
+            style={{
+              padding: "9px 16px",
+              "border-radius": "99px",
+              border: "none",
+              cursor: "pointer",
+              "font-weight": "600",
+              "font-size": "0.95em",
+              color: "var(--md-sys-color-on-primary)",
+              background: "var(--md-sys-color-primary)",
+            }}
+          >
+            💜 Quero ajudar
+          </button>
+        </div>
+
+        <GuiaModal
+          aberto={guiaAberto()}
+          fechar={() => setGuiaAberto(false)}
+          mostrarBotaoServidor={conviteConfigurado}
+          entrarNoServidor={() => navigate(`/invite/${CONVITE_SERVIDOR}`)}
+        />
+
+        <PixModal
+          aberto={pixAberto()}
+          fechar={() => setPixAberto(false)}
+          chave={CHAVE_PIX}
+        />
+
         <Show when={IS_DEV}>
           <Button onPress={() => navigate("/dev")}>
             Open Development Page
