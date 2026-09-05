@@ -117,6 +117,14 @@ function ParticipantLive(props: {
       userId={participant.identity}
       speaking={isSpeaking()}
       muted={isMuted()}
+      // Cravado, e nao por esquecimento: nao existe de onde tirar esse valor.
+      //
+      // Nada no cliente informa o ensurdecimento ao servidor, o campo
+      // is_receiving da API so e lido e nunca escrito, e a stoat.js nao tem
+      // metodo para isso. As duas vias do LiveKit tambem estao fechadas:
+      // o token traz CanPublishData: false e CanUpdateOwnMetadata: false.
+      //
+      // Destravar exige mexer no grant do token, no codigo da API em Rust.
       deafened={false}
       camera={props.cameras.has(participant.identity)}
       screenshare={props.telas.has(participant.identity)}

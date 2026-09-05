@@ -308,34 +308,9 @@ class Voice {
     room.addListener("participantDisconnected", (participante) => {
       this.sound.playSound("userLeaveVoice");
 
-      // Se essa pessoa estava vendo a minha transmissao, o cliente dela nao
-      // vai conseguir avisar que saiu. Trato a queda como saida.
-      if (this.screenshare()) {
-        this.sound.playSound("streamViewerLeave");
-      }
-
       this.#pararDeAcompanhar(participante.identity);
     });
 
-    // Aviso de quem entrou ou saiu da minha transmissao.
-    //
-    // O LiveKit nao conta espectadores para o cliente: quem publica nao tem
-    // como saber quem se inscreveu na faixa. Entao quem assiste avisa por
-    // conta propria, pelo canal de dados da sala, mandando o recado so para
-    // quem esta transmitindo. Por isso o som toca apenas para essa pessoa.
-    room.addListener("dataReceived", (dados) => {
-      try {
-        const recado = JSON.parse(new TextDecoder().decode(dados));
-
-        if (recado.callju === "assistindo") {
-          this.sound.playSound("streamViewerJoin");
-        } else if (recado.callju === "parou") {
-          this.sound.playSound("streamViewerLeave");
-        }
-      } catch {
-        // Pacote de dados de outra origem. Nao e problema nosso.
-      }
-    });
 
     room.addListener("trackPublished", (pub) => {
       if (pub.source === Track.Source.ScreenShare) {
@@ -865,28 +840,16 @@ class Voice {
       return proximo;
     });
 
-    this.#avisarTransmissor(identidade, jaAssistia ? "parou" : "assistindo");
-  }
-
-  /**
-   * Conta para quem transmite que alguem chegou ou saiu
-   *
-   * O recado vai so para a identidade de quem publica a tela, entao ninguem
-   * mais na call ouve o som.
-   */
-  #avisarTransmissor(identidade: string, tipo: "assistindo" | "parou") {
-    const room = this.room();
-    if (!room) return;
-
-    try {
-      room.localParticipant.publishData(
-        new TextEncoder().encode(JSON.stringify({ callju: tipo })),
-        { reliable: true, destinationIdentities: [identidade] },
-      );
-    } catch (e) {
-      // Um aviso perdido nao pode derrubar a call inteira
-      console.warn("[callju] nao consegui avisar quem transmite", e);
-    }
+    // Aqui existia um aviso para quem transmite, avisando que alguem entrou
+    // ou saiu da live, para tocar um som so na maquina dele. Foi removido.
+    //
+    // O LiveKit nao conta espectadores para o cliente, entao a unica via era
+    // o canal de dados da sala. Mas o token que o Stoat emite traz
+    // CanPublishData: false, e sem essa permissao publishData sempre falha.
+    // Ou seja, o recurso nunca funcionou, so falhava em silencio.
+    //
+    // Para reviver isso e preciso mudar o grant do token, que fica no codigo
+    // da API em Rust, nao neste cliente.
   }
 
   /**

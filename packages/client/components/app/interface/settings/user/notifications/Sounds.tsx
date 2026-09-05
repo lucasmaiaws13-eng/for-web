@@ -241,46 +241,6 @@ export default function Sounds() {
               </IconButton>
             </Content>
           </CategoryButton>
-          <CategoryButton
-            action={<Checkbox checked={sounds.enabled("streamViewerJoin")} />}
-            onClick={() => sounds.toggle("streamViewerJoin")}
-            icon="blank"
-          >
-            <Content>
-              <Trans>Alguém começou a assistir sua live</Trans>
-              <IconButton
-                onPress={() => soundController.playSound("streamViewerJoin", true)}
-                use:floating={{
-                  tooltip: {
-                    placement: "top",
-                    content: playSoundString,
-                  },
-                }}
-              >
-                <MdVolumeUp {...iconSize(18)} />
-              </IconButton>
-            </Content>
-          </CategoryButton>
-          <CategoryButton
-            action={<Checkbox checked={sounds.enabled("streamViewerLeave")} />}
-            onClick={() => sounds.toggle("streamViewerLeave")}
-            icon="blank"
-          >
-            <Content>
-              <Trans>Alguém parou de assistir sua live</Trans>
-              <IconButton
-                onPress={() => soundController.playSound("streamViewerLeave", true)}
-                use:floating={{
-                  tooltip: {
-                    placement: "top",
-                    content: playSoundString,
-                  },
-                }}
-              >
-                <MdVolumeUp {...iconSize(18)} />
-              </IconButton>
-            </Content>
-          </CategoryButton>
         </CategoryButton.Group>
       </Column>
     </Show>
