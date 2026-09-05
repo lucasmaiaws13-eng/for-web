@@ -206,51 +206,60 @@ export function ParticipantTile(props: TileProps) {
             }}
           />
         </Show>
-        <Overlay showOnHover={isScreenShare()}>
-          <OverlayInner>
-            <OverflowingText>{user().username}</OverflowingText>
-            <Row gap="md">
-              {isScreenShare() ? (
-                <>
-                  <Show when={isScreenShareAudioUserMuted()}>
-                    <Symbol
-                      size={18}
-                      color={
-                        isScreenShareAudioUserMuted() === "by-user"
-                          ? "var(--md-sys-color-error)"
-                          : undefined
-                      }
-                    >
-                      no_sound
-                    </Symbol>
-                  </Show>
-                  <Show when={assistindo() && !participant.isLocal}>
-                    <button
-                      class="callju-btn-ghost"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        voice.alternarAssistir(participant.identity);
-                      }}
-                      style={{
-                        padding: "5px 12px",
-                        "font-size": "0.75em",
-                        "white-space": "nowrap",
-                      }}
-                    >
-                      Parar de assistir
-                    </button>
-                  </Show>
-                </>
-              ) : (
-                <VoiceStatefulUserIcons
-                  userId={participant.identity}
-                  muted={isMuted()}
-                  camera={isVideo()}
-                />
-              )}
-            </Row>
-          </OverlayInner>
-        </Overlay>
+        {/* O convite de assistir ocupa a mesma celula do grid que este
+            overlay, e o overlay vem depois no DOM. Ele ficava por cima e
+            engolia o clique no botao mesmo com opacity 0, porque opacidade
+            nao desliga o teste de clique: o clique escorria para o div do
+            quadrinho e caia no toggleFocus. Enquanto o convite esta na tela
+            o overlay nao e montado, e nem faz falta, porque o convite ja
+            mostra o nome de quem transmite. */}
+        <Show when={assistindo()}>
+          <Overlay showOnHover={isScreenShare()}>
+            <OverlayInner>
+              <OverflowingText>{user().username}</OverflowingText>
+              <Row gap="md">
+                {isScreenShare() ? (
+                  <>
+                    <Show when={isScreenShareAudioUserMuted()}>
+                      <Symbol
+                        size={18}
+                        color={
+                          isScreenShareAudioUserMuted() === "by-user"
+                            ? "var(--md-sys-color-error)"
+                            : undefined
+                        }
+                      >
+                        no_sound
+                      </Symbol>
+                    </Show>
+                    <Show when={assistindo() && !participant.isLocal}>
+                      <button
+                        class="callju-btn-ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          voice.alternarAssistir(participant.identity);
+                        }}
+                        style={{
+                          padding: "5px 12px",
+                          "font-size": "0.75em",
+                          "white-space": "nowrap",
+                        }}
+                      >
+                        Parar de assistir
+                      </button>
+                    </Show>
+                  </>
+                ) : (
+                  <VoiceStatefulUserIcons
+                    userId={participant.identity}
+                    muted={isMuted()}
+                    camera={isVideo()}
+                  />
+                )}
+              </Row>
+            </OverlayInner>
+          </Overlay>
+        </Show>
       </div>
     </Show>
   );
