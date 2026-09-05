@@ -50,6 +50,26 @@ export default function Sounds() {
             </Content>
           </CategoryButton>
           <CategoryButton
+            action={<Checkbox checked={sounds.enabled("poke")} />}
+            onClick={() => sounds.toggle("poke")}
+            icon="blank"
+          >
+            <Content>
+              <Trans>Cutucada</Trans>
+              <IconButton
+                onPress={() => soundController.playSound("poke", true)}
+                use:floating={{
+                  tooltip: {
+                    placement: "top",
+                    content: playSoundString,
+                  },
+                }}
+              >
+                <MdVolumeUp {...iconSize(18)} />
+              </IconButton>
+            </Content>
+          </CategoryButton>
+          <CategoryButton
             action={<Checkbox checked={sounds.enabled("mute")} />}
             onClick={() => sounds.toggle("mute")}
             icon="blank"
@@ -210,6 +230,46 @@ export default function Sounds() {
               <Trans>Stream End</Trans>
               <IconButton
                 onPress={() => soundController.playSound("streamEnd", true)}
+                use:floating={{
+                  tooltip: {
+                    placement: "top",
+                    content: playSoundString,
+                  },
+                }}
+              >
+                <MdVolumeUp {...iconSize(18)} />
+              </IconButton>
+            </Content>
+          </CategoryButton>
+          <CategoryButton
+            action={<Checkbox checked={sounds.enabled("streamViewerJoin")} />}
+            onClick={() => sounds.toggle("streamViewerJoin")}
+            icon="blank"
+          >
+            <Content>
+              <Trans>Alguém começou a assistir sua live</Trans>
+              <IconButton
+                onPress={() => soundController.playSound("streamViewerJoin", true)}
+                use:floating={{
+                  tooltip: {
+                    placement: "top",
+                    content: playSoundString,
+                  },
+                }}
+              >
+                <MdVolumeUp {...iconSize(18)} />
+              </IconButton>
+            </Content>
+          </CategoryButton>
+          <CategoryButton
+            action={<Checkbox checked={sounds.enabled("streamViewerLeave")} />}
+            onClick={() => sounds.toggle("streamViewerLeave")}
+            icon="blank"
+          >
+            <Content>
+              <Trans>Alguém parou de assistir sua live</Trans>
+              <IconButton
+                onPress={() => soundController.playSound("streamViewerLeave", true)}
                 use:floating={{
                   tooltip: {
                     placement: "top",

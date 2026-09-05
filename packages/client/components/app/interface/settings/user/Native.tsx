@@ -170,7 +170,7 @@ export default function Native() {
             </>
           }
         >
-          <Trans>Stoat for Desktop</Trans>
+          <>Callju para Desktop</>
         </CategoryButton>
       </CategoryButton.Group>
     </Column>

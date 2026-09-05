@@ -1,7 +1,6 @@
 import { Match, Show, Switch } from "solid-js";
 
 import { Trans } from "@lingui/solid/macro";
-import { css } from "styled-system/css";
 
 import { useClientLifecycle } from "@revolt/client";
 import { TransitionType } from "@revolt/client/Controller";
@@ -9,7 +8,6 @@ import { Navigate } from "@revolt/routing";
 import { Button, Column } from "@revolt/ui";
 
 import { useState } from "@revolt/state";
-import Wordmark from "../../../../public/assets/web/wordmark.svg?component-solid";
 
 /**
  * Flow for logging into an account
@@ -27,57 +25,111 @@ export default function FlowHome() {
           </Show>
 
           <Column gap="xl">
-            <Wordmark
-              class={css({
-                width: "60%",
-                margin: "auto",
-                fill: "var(--md-sys-color-on-surface)",
-              })}
-            />
+            <div
+              style={{
+                display: "flex",
+                "flex-direction": "column",
+                "align-items": "center",
+                gap: "10px",
+              }}
+            >
+              {/* O emoji fica FORA do elemento com degrade de proposito.
+                  background-clip:text nao pinta elementos filhos, e o filho
+                  ainda herda color:transparent, entao o emoji sumia. */}
+              <div
+                style={{
+                  display: "flex",
+                  "align-items": "center",
+                  "justify-content": "center",
+                  gap: "0.2em",
+                  "font-size": "2.9em",
+                  "font-weight": "800",
+                  "line-height": "1.05",
+                }}
+              >
+                <span style={{ transform: "translateY(-0.06em)" }}>🥭</span>
+                <span
+                  style={{
+                    "letter-spacing": "-0.03em",
+                    background: "var(--callju-grad)",
+                    "-webkit-background-clip": "text",
+                    "background-clip": "text",
+                    color: "transparent",
+                  }}
+                >
+                  Callju
+                </span>
+              </div>
+
+              <div
+                style={{
+                  "font-size": "0.78em",
+                  "letter-spacing": "0.22em",
+                  "text-transform": "uppercase",
+                  opacity: "0.45",
+                  "text-align": "center",
+                }}
+              >
+                call + caju
+              </div>
+            </div>
 
             <Column>
               <b
                 style={{
-                  "font-weight": 800,
-                  "font-size": "1.4em",
+                  "font-weight": "800",
+                  "font-size": "1.35em",
                   display: "flex",
                   "flex-direction": "column",
                   "align-items": "center",
                   "text-align": "center",
+                  "line-height": "1.3",
                 }}
               >
                 <span>
-                  <Trans>
-                    Find your com
-                    <wbr />
-                    munity,
-                    <br />
-                    connect with the world.
-                  </Trans>
+                  Chega mais.
+                  <br />
+                  A call já tá rolando.
                 </span>
               </b>
-              <span style={{ "text-align": "center", opacity: "0.5" }}>
-                <Trans>
-                  Stoat is one of the best ways to stay connected with your
-                  friends and community, anywhere, anytime.
-                </Trans>
+
+              <span
+                style={{
+                  "text-align": "center",
+                  opacity: "0.55",
+                  "line-height": "1.5",
+                }}
+              >
+                Voz nítida, tela em 1080p e nenhum anúncio no meio do papo.
+                Nosso canto, nossas regras.
               </span>
             </Column>
 
             <Column>
-              <a href="/login/auth">
-                <Column>
-                  <Button>
-                    <Trans>Log In</Trans>
-                  </Button>
-                </Column>
+              <a href="/login/auth" style={{ "text-decoration": "none" }}>
+                <button
+                  class="callju-btn"
+                  style={{
+                    width: "100%",
+                    padding: "13px 20px",
+                    "font-size": "0.98em",
+                  }}
+                >
+                  Entrar
+                </button>
               </a>
-              <a href="/login/create">
-                <Column>
-                  <Button variant="tonal">
-                    <Trans>Sign Up</Trans>
-                  </Button>
-                </Column>
+              <a href="/login/create" style={{ "text-decoration": "none" }}>
+                <button
+                  class="callju-btn-ghost"
+                  style={{
+                    width: "100%",
+                    padding: "13px 20px",
+                    "font-size": "0.98em",
+                    "font-weight": "600",
+                  }}
+                >
+                  Criar conta
+                </button>
               </a>
             </Column>
           </Column>

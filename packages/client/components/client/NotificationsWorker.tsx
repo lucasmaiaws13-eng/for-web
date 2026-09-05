@@ -15,7 +15,7 @@ import {
 import { useNavigate, useSmartParams } from "@revolt/routing";
 import { useState } from "@revolt/state";
 
-import { useClient, useNotifications, useSound } from ".";
+import { TEXTO_CUTUCADA, useClient, useNotifications, useSound } from ".";
 
 /**
  * Process and display desktop notifications
@@ -45,6 +45,14 @@ export function NotificationsWorker() {
 
     // Ignore blocked users
     if (message.author?.relationship === "Blocked") return;
+
+    // A cutucada e tratada aqui em cima de proposito, antes de qualquer regra
+    // de silenciamento, de foco e da permissao de notificacao do navegador.
+    // A graca dela e justamente furar o silencio, entao ela toca mesmo com a
+    // conversa aberta na tela. Quem nao quiser desliga em Configuracoes.
+    if (message.content === TEXTO_CUTUCADA) {
+      sound.playSound("poke");
+    }
 
     // Ignore muted channels
     if (state.notifications.isMuted(message.channel)) return;

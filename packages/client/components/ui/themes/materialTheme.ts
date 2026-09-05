@@ -169,11 +169,27 @@ function generateMaterialYouScheme(
     case "vibrant":
       scheme = new SchemeVibrant(hct, darkMode, contrast);
       break;
+    case "caju":
     case "tonal_spot":
     default:
       scheme = new SchemeTonalSpot(hct, darkMode, contrast);
       break;
   }
+
+  // Segundo esquema, em escala de cinza pura.
+  //
+  // O Material deriva TODAS as cores da matiz da semente, inclusive as
+  // superficies. Com semente laranja os cinzas saem amarronzados, do mesmo
+  // jeito que uma semente azul deixa tudo azulado. Como aqui a gente quer
+  // fundo preto/cinza neutro e laranja apenas nos destaques, geramos as
+  // superficies a partir do SchemeMonochrome e mantemos o esquema colorido
+  // so para primary, secondary, tertiary e error.
+  const neutro = new SchemeMonochrome(hct, darkMode, contrast);
+
+  // Na variante 'caju' as superficies herdam a matiz quente do destaque,
+  // dando o visual amadeirado. Em todas as outras elas vem do esquema
+  // monocromatico, resultando em preto e cinza neutros de verdade.
+  const superficie = variant === "caju" ? scheme : neutro;
 
   return {
     primary: hexFromArgb(scheme.primary),
@@ -206,26 +222,26 @@ function generateMaterialYouScheme(
     "on-tertiary-fixed": hexFromArgb(scheme.onTertiaryFixed),
     "on-tertiary-fixed-variant": hexFromArgb(scheme.onTertiaryFixedVariant),
 
-    "surface-dim": hexFromArgb(scheme.surfaceDim),
-    surface: hexFromArgb(scheme.surface),
-    "surface-bright": hexFromArgb(scheme.surfaceBright),
+    "surface-dim": hexFromArgb(superficie.surfaceDim),
+    surface: hexFromArgb(superficie.surface),
+    "surface-bright": hexFromArgb(superficie.surfaceBright),
 
-    "surface-container-lowest": hexFromArgb(scheme.surfaceContainerLowest),
-    "surface-container-low": hexFromArgb(scheme.surfaceContainerLow),
-    "surface-container": hexFromArgb(scheme.surfaceContainer),
-    "surface-container-high": hexFromArgb(scheme.surfaceContainerHigh),
-    "surface-container-highest": hexFromArgb(scheme.surfaceContainerHighest),
+    "surface-container-lowest": hexFromArgb(superficie.surfaceContainerLowest),
+    "surface-container-low": hexFromArgb(superficie.surfaceContainerLow),
+    "surface-container": hexFromArgb(superficie.surfaceContainer),
+    "surface-container-high": hexFromArgb(superficie.surfaceContainerHigh),
+    "surface-container-highest": hexFromArgb(superficie.surfaceContainerHighest),
 
-    "on-surface": hexFromArgb(scheme.onSurface),
-    "on-surface-variant": hexFromArgb(scheme.onSurfaceVariant),
-    outline: hexFromArgb(scheme.outline),
-    "outline-variant": hexFromArgb(scheme.outlineVariant),
+    "on-surface": hexFromArgb(superficie.onSurface),
+    "on-surface-variant": hexFromArgb(superficie.onSurfaceVariant),
+    outline: hexFromArgb(superficie.outline),
+    "outline-variant": hexFromArgb(superficie.outlineVariant),
 
-    "inverse-surface": hexFromArgb(scheme.inverseSurface),
-    "inverse-on-surface": hexFromArgb(scheme.inverseOnSurface),
+    "inverse-surface": hexFromArgb(superficie.inverseSurface),
+    "inverse-on-surface": hexFromArgb(superficie.inverseOnSurface),
     "inverse-primary": hexFromArgb(scheme.inversePrimary),
 
-    scrim: hexFromArgb(scheme.scrim),
-    shadow: hexFromArgb(scheme.shadow),
+    scrim: hexFromArgb(superficie.scrim),
+    shadow: hexFromArgb(superficie.shadow),
   };
 }

@@ -1,7 +1,6 @@
-import { Match, Show, Switch } from "solid-js";
+import { Match, Show, Switch, createSignal } from "solid-js";
 
 import { Trans } from "@lingui/solid/macro";
-import { PublicChannelInvite } from "stoat.js";
 import { css, cva } from "styled-system/css";
 import { styled } from "styled-system/jsx";
 
@@ -19,16 +18,23 @@ import {
 } from "@revolt/ui";
 
 import MdAddCircle from "@material-design-icons/svg/filled/add_circle.svg?component-solid";
-import MdExplore from "@material-design-icons/svg/filled/explore.svg?component-solid";
+import MdFavorite from "@material-design-icons/svg/filled/favorite.svg?component-solid";
 import MdGroups3 from "@material-design-icons/svg/filled/groups_3.svg?component-solid";
+import MdHelpCenter from "@material-design-icons/svg/filled/help_center.svg?component-solid";
 import MdHome from "@material-design-icons/svg/filled/home.svg?component-solid";
-import MdPayments from "@material-design-icons/svg/filled/payments.svg?component-solid";
-import MdRateReview from "@material-design-icons/svg/filled/rate_review.svg?component-solid";
 import MdSettings from "@material-design-icons/svg/filled/settings.svg?component-solid";
 
-import Wordmark from "../../public/assets/web/wordmark.svg?component-solid";
 
 import { HeaderIcon } from "./common/CommonHeader";
+import { AvisoModal, GuiaModal, PixModal } from "./CalljuModals";
+
+// >>> TROQUE AQUI pela sua chave Pix (CPF, telefone, email ou aleatoria)
+const CHAVE_PIX = "+5591983673239";
+
+// >>> TROQUE AQUI pelo codigo do convite permanente do servidor principal.
+// So o codigo, nao a URL inteira. Ex: se o link e /invite/AbC123, use "AbC123".
+// Enquanto estiver com o valor de exemplo, o botao fica escondido.
+const CONVITE_SERVIDOR = "TA4TJ57t";
 
 /**
  * Base layout of the home page (i.e. the header/background)
@@ -90,6 +96,85 @@ const SeparatedColumn = styled(Column, {
 });
 
 /**
+ * Cartao de acao da tela inicial.
+ *
+ * Titulo e descricao usam pesos, tamanhos e opacidades bem distintos
+ * de proposito: e o que cria hierarquia sem precisar de outra familia
+ * tipografica.
+ */
+function CartaoAcao(props: {
+  emoji: string;
+  titulo: string;
+  texto: string;
+  onClick: () => void;
+  destaque?: boolean;
+}) {
+  return (
+    <button
+      class="callju-lift"
+      onClick={props.onClick}
+      style={{
+        display: "flex",
+        "align-items": "center",
+        gap: "13px",
+        padding: "14px 15px",
+        "border-radius": "14px",
+        cursor: "pointer",
+        "text-align": "start",
+        color: "var(--md-sys-color-on-surface)",
+        background: "var(--md-sys-color-surface-container-high)",
+        border: props.destaque
+          ? "1px solid var(--callju-accent-line)"
+          : "1px solid transparent",
+      }}
+    >
+      <span
+        style={{
+          width: "36px",
+          height: "36px",
+          "flex-shrink": "0",
+          display: "flex",
+          "align-items": "center",
+          "justify-content": "center",
+          "border-radius": "10px",
+          "font-size": "1.05em",
+          background: props.destaque
+            ? "var(--callju-accent-soft)"
+            : "var(--md-sys-color-surface-variant)",
+        }}
+      >
+        {props.emoji}
+      </span>
+
+      <span style={{ "min-width": "0" }}>
+        <span
+          style={{
+            display: "block",
+            "font-size": "0.95em",
+            "font-weight": "650",
+            "letter-spacing": "-0.005em",
+          }}
+        >
+          {props.titulo}
+        </span>
+        <span
+          style={{
+            display: "block",
+            "font-size": "0.8em",
+            "font-weight": "400",
+            opacity: "0.5",
+            "margin-top": "2px",
+            "line-height": "1.35",
+          }}
+        >
+          {props.texto}
+        </span>
+      </span>
+    </button>
+  );
+}
+
+/**
  * Home page
  */
 export function HomePage() {
@@ -98,139 +183,240 @@ export function HomePage() {
   const client = useClient();
   const instance = useInstance();
 
-  // check if we're stoat.chat; if so, check if the user is in the Lounge
-  const showLoungeButton = instance.isStoat;
-  const isInLounge =
-    client()!.servers.get("01F7ZSBSFHQ8TA81725KQCSDDP") !== undefined;
+  const [guiaAberto, setGuiaAberto] = createSignal(false);
+  const [pixAberto, setPixAberto] = createSignal(false);
+  const [avisoAberto, setAvisoAberto] = createSignal(false);
+  const conviteConfigurado = CONVITE_SERVIDOR !== "cole-o-codigo-do-convite-aqui";
 
   return (
     <Base>
       <Header placement="primary">
         <HeaderIcon>
-          <MdHome {...iconSize(22)} />
+          <MdHome {...iconSize(22)} fill="var(--callju-accent)" />
         </HeaderIcon>
         <Trans>Home</Trans>
       </Header>
       <div use:scrollable={{ class: content() }}>
-        <Column>
-          <Wordmark
-            class={css({
-              width: "160px",
-              fill: "var(--md-sys-color-on-surface)",
-            })}
-          />
-        </Column>
-        <Buttons>
-          <SeparatedColumn>
-            <CategoryButton
-              onClick={() =>
-                openModal({
-                  type: "create_group_or_server",
-                  client: client()!,
-                })
-              }
-              description={
-                <Trans>
-                  Invite all of your friends, some cool bots, and throw a big
-                  party.
-                </Trans>
-              }
-              icon={<MdAddCircle />}
+        <div
+          class="callju-rise"
+          style={{
+            display: "flex",
+            "align-items": "center",
+            "justify-content": "center",
+            gap: "10px",
+            "flex-wrap": "wrap",
+          }}
+        >
+          <button
+            onClick={() => setAvisoAberto(true)}
+            class="callju-lift"
+            style={{
+              display: "flex",
+              "align-items": "center",
+              gap: "9px",
+              padding: "9px 16px",
+              "border-radius": "99px",
+              cursor: "pointer",
+              "font-size": "0.82em",
+              "font-weight": "600",
+              "letter-spacing": "0.01em",
+              color: "var(--callju-accent)",
+              background: "var(--callju-accent-soft)",
+              border: "1px solid var(--callju-accent-line)",
+            }}
+          >
+            <span
+              class="callju-speaking"
+              style={{
+                width: "7px",
+                height: "7px",
+                "border-radius": "99px",
+                background: "var(--callju-accent)",
+              }}
+            />
+            Em fase de testes
+          </button>
+
+          <span
+            class="callju-speaking"
+            style={{
+              "font-size": "0.8em",
+              opacity: "0.55",
+              "font-style": "italic",
+            }}
+          >
+            clique aqui!
+          </span>
+        </div>
+
+        <div style={{ "text-align": "center" }}>
+          {/* O emoji fica FORA do elemento com degrade: dentro dele o
+              background-clip nao pinta elementos filhos, e o filho ainda
+              herda color:transparent, o que deixava o emoji invisivel. */}
+          <div
+            style={{
+              display: "flex",
+              "align-items": "center",
+              "justify-content": "center",
+              gap: "0.22em",
+              "font-size": "2.6em",
+              "font-weight": "800",
+              "line-height": "1.1",
+            }}
+          >
+            <span style={{ transform: "translateY(-0.06em)" }}>🥭</span>
+            <span
+              class="callju-wordmark"
+              style={{ "letter-spacing": "-0.035em" }}
             >
-              <Trans>Create a group or server</Trans>
-            </CategoryButton>
-            <Switch fallback={null}>
-              <Match when={showLoungeButton && isInLounge}>
-                <CategoryButton
-                  onClick={() => navigate("/server/01F7ZSBSFHQ8TA81725KQCSDDP")}
-                  description={
-                    <Trans>
-                      You can report issues and discuss improvements with us
-                      directly here.
-                    </Trans>
-                  }
-                  icon={<MdGroups3 />}
-                >
-                  <Trans>Go to the Stoat Lounge</Trans>
-                </CategoryButton>
-              </Match>
-              <Match when={showLoungeButton && !isInLounge}>
-                <CategoryButton
-                  onClick={() => {
-                    client()
-                      .api.get("/invites/Testers")
-                      .then((invite) =>
-                        PublicChannelInvite.from(client(), invite),
-                      )
-                      .then((invite) => openModal({ type: "invite", invite }));
-                  }}
-                  description={
-                    <Trans>
-                      You can report issues and discuss improvements with us
-                      directly here.
-                    </Trans>
-                  }
-                  icon={<MdGroups3 />}
-                >
-                  <Trans>Join the Stoat Lounge</Trans>
-                </CategoryButton>
-              </Match>
-            </Switch>
-            <CategoryButton
-              variant="tertiary"
-              onClick={() => window.open("https://ko-fi.com/stoatchat")}
-              description={
-                <Trans>Support the project by donating - thank you!</Trans>
-              }
-              icon={<MdPayments />}
+              Callju
+            </span>
+          </div>
+          <div
+            style={{
+              "font-size": "0.7em",
+              "letter-spacing": "0.26em",
+              "text-transform": "uppercase",
+              opacity: "0.38",
+              "margin-top": "8px",
+            }}
+          >
+            call + caju
+          </div>
+        </div>
+
+        <Show when={conviteConfigurado}>
+          <button
+            class="callju-btn callju-rise"
+            onClick={() => navigate(`/invite/${CONVITE_SERVIDOR}`)}
+            style={{
+              width: "100%",
+              "max-width": "540px",
+              padding: "16px 18px",
+              display: "flex",
+              "align-items": "center",
+              gap: "16px",
+              "text-align": "start",
+            }}
+          >
+            <span
+              style={{
+                width: "42px",
+                height: "42px",
+                "flex-shrink": "0",
+                display: "flex",
+                "align-items": "center",
+                "justify-content": "center",
+                "border-radius": "99px",
+                "font-size": "1.25em",
+                background: "rgba(255, 255, 255, 0.18)",
+              }}
             >
-              <Trans>Donate to Stoat</Trans>
-            </CategoryButton>
-          </SeparatedColumn>
-          <SeparatedColumn>
-            <Show when={instance.isStoat}>
-              <CategoryButton
-                onClick={() => navigate("/discover")}
-                description={
-                  <Trans>
-                    Find a community based on your hobbies or interests.
-                  </Trans>
-                }
-                icon={<MdExplore />}
+              🎧
+            </span>
+
+            <span style={{ flex: "1", "min-width": "0" }}>
+              <span
+                style={{
+                  display: "block",
+                  "font-size": "1.06em",
+                  "font-weight": "700",
+                  "letter-spacing": "-0.01em",
+                }}
               >
-                <Trans>Discover Stoat</Trans>
-              </CategoryButton>
-            </Show>
-            <CategoryButton
-              onClick={() =>
-                openModal({
-                  type: "settings",
-                  config: "user",
-                  context: { page: "feedback" },
-                })
-              }
-              description={
-                <Trans>
-                  Let us know how we can improve our app by giving us feedback.
-                </Trans>
-              }
-              icon={<MdRateReview {...iconSize(22)} />}
+                Entrar no servidor
+              </span>
+              <span
+                style={{
+                  display: "block",
+                  "font-size": "0.86em",
+                  "font-weight": "400",
+                  opacity: "0.85",
+                  "margin-top": "3px",
+                }}
+              >
+                pra conversar com a galera é por aqui
+              </span>
+            </span>
+
+            <span
+              style={{
+                width: "30px",
+                height: "30px",
+                "flex-shrink": "0",
+                display: "flex",
+                "align-items": "center",
+                "justify-content": "center",
+                "border-radius": "99px",
+                "font-size": "1.15em",
+                background: "rgba(255, 255, 255, 0.18)",
+              }}
             >
-              <Trans>Give feedback on Stoat</Trans>
-            </CategoryButton>
-            <CategoryButton
-              onClick={() => openModal({ type: "settings", config: "user" })}
-              description={
-                <Trans>
-                  You can also click the gear icon in the bottom left.
-                </Trans>
-              }
-              icon={<MdSettings />}
-            >
-              <Trans>Open settings</Trans>
-            </CategoryButton>
-          </SeparatedColumn>
-        </Buttons>
+              &rsaquo;
+            </span>
+          </button>
+        </Show>
+
+        <div
+          style={{
+            width: "100%",
+            "max-width": "540px",
+            display: "grid",
+            "grid-template-columns": "repeat(auto-fit, minmax(240px, 1fr))",
+            gap: "10px",
+          }}
+        >
+          <CartaoAcao
+            emoji="➕"
+            titulo="Criar um grupo"
+            texto="Chame a galera e monte um canal novo"
+            onClick={() =>
+              openModal({
+                type: "create_group_or_server",
+                client: client()!,
+              })
+            }
+          />
+          <CartaoAcao
+            emoji="⚙️"
+            titulo="Configurações"
+            texto="Microfone, câmera, tema e notificações"
+            onClick={() => openModal({ type: "settings", config: "user" })}
+          />
+          <CartaoAcao
+            emoji="📖"
+            titulo="Como usar o Callju"
+            texto="Primeira vez aqui? Começa por aqui"
+            onClick={() => setGuiaAberto(true)}
+          />
+          <CartaoAcao
+            emoji="🧡"
+            titulo="Me ajude a manter no ar"
+            texto="O servidor tem custo mensal"
+            onClick={() => setPixAberto(true)}
+            destaque
+          />
+        </div>
+
+        <GuiaModal
+          aberto={guiaAberto()}
+          fechar={() => setGuiaAberto(false)}
+          mostrarBotaoServidor={conviteConfigurado}
+          entrarNoServidor={() => navigate(`/invite/${CONVITE_SERVIDOR}`)}
+        />
+
+        <PixModal
+          aberto={pixAberto()}
+          fechar={() => setPixAberto(false)}
+          chave={CHAVE_PIX}
+        />
+
+        <AvisoModal
+          aberto={avisoAberto()}
+          fechar={() => setAvisoAberto(false)}
+          abrirPix={() => setPixAberto(true)}
+        />
+
         <Show when={IS_DEV}>
           <Button onPress={() => navigate("/dev")}>
             Open Development Page

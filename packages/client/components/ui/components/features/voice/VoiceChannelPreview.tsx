@@ -46,9 +46,37 @@ function VariantLive() {
     { onlySubscribed: false },
   );
 
+  // Quem esta transmitindo tela ou camera neste instante.
+  //
+  // Antes esta variante mandava screenshare={false} fixo, entao o simbolo
+  // de transmissao nunca aparecia justamente para quem estava dentro da
+  // call. A lista da API (VariantPreview) ja acertava isso; aqui faltava.
+  const telas = useTracks(
+    [{ source: Track.Source.ScreenShare, withPlaceholder: false }],
+    { onlySubscribed: false },
+  );
+
+  const cameras = useTracks(
+    [{ source: Track.Source.Camera, withPlaceholder: false }],
+    { onlySubscribed: false },
+  );
+
+  const transmitindoTela = () =>
+    new Set(telas().map((t) => t.participant.identity));
+
+  const transmitindoCamera = () =>
+    new Set(cameras().map((t) => t.participant.identity));
+
   return (
     <Base>
-      <TrackLoop tracks={tracks}>{() => <ParticipantLive />}</TrackLoop>
+      <TrackLoop tracks={tracks}>
+        {() => (
+          <ParticipantLive
+            telas={transmitindoTela()}
+            cameras={transmitindoCamera()}
+          />
+        )}
+      </TrackLoop>
     </Base>
   );
 }
@@ -71,7 +99,10 @@ function VariantPreview(props: { channel: Channel }) {
 /**
  * Live variant of participant
  */
-function ParticipantLive() {
+function ParticipantLive(props: {
+  telas: Set<string>;
+  cameras: Set<string>;
+}) {
   const participant = useEnsureParticipant();
 
   const isMuted = useIsMuted({
@@ -87,8 +118,8 @@ function ParticipantLive() {
       speaking={isSpeaking()}
       muted={isMuted()}
       deafened={false}
-      camera={false}
-      screenshare={false}
+      camera={props.cameras.has(participant.identity)}
+      screenshare={props.telas.has(participant.identity)}
       isLive
     />
   );
@@ -190,7 +221,7 @@ const previewUser = cva({
 
         "& svg": {
           outlineOffset: "1px",
-          outline: "2px solid var(--md-sys-color-primary)",
+          outline: "2px solid var(--callju-accent)",
           borderRadius: "var(--borderRadius-circle)",
         },
       },

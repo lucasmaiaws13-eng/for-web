@@ -4,6 +4,7 @@ import { Sounds, TypeSounds, useState } from "@revolt/state";
 import deafenSound from "../../public/assets/sounds/deafen.ogg";
 import messageSound from "../../public/assets/sounds/message_sound.ogg";
 import muteSound from "../../public/assets/sounds/mute.ogg";
+import pokeSound from "../../public/assets/sounds/poke.ogg";
 import ringtoneIncomingSound from "../../public/assets/sounds/ringtone_incoming.ogg";
 import ringtoneOutgoingSound from "../../public/assets/sounds/ringtone_outgoing.ogg";
 import streamEndSound from "../../public/assets/sounds/stream_end.ogg";
@@ -15,6 +16,19 @@ import unmuteSound from "../../public/assets/sounds/unmute.ogg";
 import userJoinVoiceSound from "../../public/assets/sounds/user_join_voice.ogg";
 import userLeaveVoiceSound from "../../public/assets/sounds/user_leave_voice.ogg";
 import userMovedSound from "../../public/assets/sounds/user_moved.ogg";
+
+/**
+ * Texto exato que marca uma cutucada.
+ *
+ * O servidor nao tem evento de cutucada, entao a mensagem no direct e o
+ * proprio transporte: quem cutuca manda este texto e o cliente de quem recebe
+ * reconhece e toca o som. O efeito colateral e bom, a cutucada fica registrada
+ * na conversa, igual acontece no TeamSpeak.
+ *
+ * Se este texto mudar, cutucadas antigas param de ser reconhecidas. Elas
+ * continuam aparecendo como mensagem normal, entao nada quebra.
+ */
+export const TEXTO_CUTUCADA = "\u{1F449} Te cutucou!";
 
 /**
  * A controller class for making sure sounds are managed in one place and to prevent undesirable sound overlaps
@@ -87,6 +101,10 @@ export class SoundController {
       }
       case "mute": {
         this.node = new Audio(muteSound);
+        break;
+      }
+      case "poke": {
+        this.node = new Audio(pokeSound);
         break;
       }
       case "ringtoneIncoming": {

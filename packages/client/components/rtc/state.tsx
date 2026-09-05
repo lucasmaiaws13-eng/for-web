@@ -90,6 +90,15 @@ class Voice {
   showBar: Accessor<boolean>;
   #setShowBar: Setter<boolean>;
 
+  /**
+   * Identidades de quem o usuario escolheu assistir nesta call.
+   *
+   * Comeca vazio e e limpo ao sair: entrar num canal de voz nao deve arrastar
+   * ninguem para dentro de uma transmissao que a pessoa nao pediu para ver.
+   */
+  assistindo: Accessor<Set<string>>;
+  #setAssistindo: Setter<Set<string>>;
+
   private sound: SoundController;
   private device: Device;
 
@@ -145,6 +154,10 @@ class Voice {
     const [showBar, setShowBar] = createSignal(true);
     this.showBar = showBar;
     this.#setShowBar = setShowBar;
+
+    const [assistindo, setAssistindo] = createSignal<Set<string>>(new Set());
+    this.assistindo = assistindo;
+    this.#setAssistindo = setAssistindo;
 
     const inst = useInstance();
     this.config = inst.config;
@@ -284,8 +297,36 @@ class Voice {
       this.sound.playSound("userJoinVoice");
     });
 
-    room.addListener("participantDisconnected", () => {
+    room.addListener("participantDisconnected", (participante) => {
       this.sound.playSound("userLeaveVoice");
+
+      // Se essa pessoa estava vendo a minha transmissao, o cliente dela nao
+      // vai conseguir avisar que saiu. Trato a queda como saida.
+      if (this.screenshare()) {
+        this.sound.playSound("streamViewerLeave");
+      }
+
+      this.#pararDeAcompanhar(participante.identity);
+    });
+
+    // Aviso de quem entrou ou saiu da minha transmissao.
+    //
+    // O LiveKit nao conta espectadores para o cliente: quem publica nao tem
+    // como saber quem se inscreveu na faixa. Entao quem assiste avisa por
+    // conta propria, pelo canal de dados da sala, mandando o recado so para
+    // quem esta transmitindo. Por isso o som toca apenas para essa pessoa.
+    room.addListener("dataReceived", (dados) => {
+      try {
+        const recado = JSON.parse(new TextDecoder().decode(dados));
+
+        if (recado.callju === "assistindo") {
+          this.sound.playSound("streamViewerJoin");
+        } else if (recado.callju === "parou") {
+          this.sound.playSound("streamViewerLeave");
+        }
+      } catch {
+        // Pacote de dados de outra origem. Nao e problema nosso.
+      }
     });
 
     room.addListener("trackPublished", (pub) => {
@@ -303,10 +344,15 @@ class Voice {
       }
     });
 
-    room.addListener("trackUnpublished", (unpub) => {
+    room.addListener("trackUnpublished", (unpub, participante) => {
       if (this.screenShareTracks.has(unpub.trackSid)) {
         this.sound.playSound("streamEnd");
         this.screenShareTracks.delete(unpub.trackSid);
+
+        // A transmissao acabou. Esqueco a escolha para que a proxima live
+        // dessa pessoa nao comece ligada sozinha na tela de quem assistiu
+        // a anterior.
+        this.#pararDeAcompanhar(participante?.identity);
       }
     });
 
@@ -346,6 +392,7 @@ class Voice {
       });
 
       this.screenShareTracks = new Set();
+      this.#setAssistindo(new Set());
 
       this.sound.playSound("userLeaveVoice");
     } catch (e) {
@@ -669,6 +716,74 @@ class Voice {
 
   getConnectedUser(userId: string) {
     return this.room()?.getParticipantByIdentity(userId);
+  }
+
+  /**
+   * Se o usuario escolheu acompanhar a transmissao de alguem
+   */
+  estaAssistindo(identidade: string) {
+    return this.assistindo().has(identidade);
+  }
+
+  /**
+   * Entra ou sai da transmissao de alguem
+   *
+   * Enquanto isso for falso o video nem chega a ser montado na tela, e como o
+   * LiveKit so baixa faixa inscrita, quem nao esta assistindo tambem nao
+   * gasta banda com a live.
+   */
+  alternarAssistir(identidade: string) {
+    const jaAssistia = this.estaAssistindo(identidade);
+
+    this.#setAssistindo((atual) => {
+      const proximo = new Set(atual);
+
+      if (jaAssistia) {
+        proximo.delete(identidade);
+      } else {
+        proximo.add(identidade);
+      }
+
+      return proximo;
+    });
+
+    this.#avisarTransmissor(identidade, jaAssistia ? "parou" : "assistindo");
+  }
+
+  /**
+   * Conta para quem transmite que alguem chegou ou saiu
+   *
+   * O recado vai so para a identidade de quem publica a tela, entao ninguem
+   * mais na call ouve o som.
+   */
+  #avisarTransmissor(identidade: string, tipo: "assistindo" | "parou") {
+    const room = this.room();
+    if (!room) return;
+
+    try {
+      room.localParticipant.publishData(
+        new TextEncoder().encode(JSON.stringify({ callju: tipo })),
+        { reliable: true, destinationIdentities: [identidade] },
+      );
+    } catch (e) {
+      // Um aviso perdido nao pode derrubar a call inteira
+      console.warn("[callju] nao consegui avisar quem transmite", e);
+    }
+  }
+
+  /**
+   * Tira alguem da lista de quem estou assistindo
+   */
+  #pararDeAcompanhar(identidade?: string) {
+    if (!identidade) return;
+
+    this.#setAssistindo((atual) => {
+      if (!atual.has(identidade)) return atual;
+
+      const proximo = new Set(atual);
+      proximo.delete(identidade);
+      return proximo;
+    });
   }
 
   showCard(channel: Channel) {

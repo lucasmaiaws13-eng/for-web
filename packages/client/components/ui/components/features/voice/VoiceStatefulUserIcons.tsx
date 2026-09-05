@@ -50,7 +50,18 @@ export function VoiceStatefulUserIcons(props: {
         <Symbol size={16}>camera_video</Symbol>
       </Show>
       <Show when={props.screenshare}>
-        <Symbol size={16}>screen_share</Symbol>
+        <Symbol
+          size={16}
+          color="var(--callju-accent)"
+          use:floating={{
+            tooltip: {
+              placement: "top",
+              content: t`Transmitindo a tela agora`,
+            },
+          }}
+        >
+          screen_share
+        </Symbol>
       </Show>
     </>
   );

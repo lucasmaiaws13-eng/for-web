@@ -19,6 +19,11 @@ export type TypeSounds = {
   mute: boolean;
 
   /**
+   * Toca quando alguem te cutuca
+   */
+  poke: boolean;
+
+  /**
    * Play sound when receiving a DM call
    */
   ringtoneIncoming: boolean;
@@ -86,6 +91,7 @@ export class Sounds extends AbstractStore<"sounds", TypeSounds> {
       deafen: true,
       message: true,
       mute: true,
+      poke: true,
       ringtoneIncoming: true,
       ringtoneOutgoing: true,
       streamEnd: true,
@@ -105,6 +111,7 @@ export class Sounds extends AbstractStore<"sounds", TypeSounds> {
       deafen: typeof input.deafen === "boolean" ? input.deafen : true,
       message: typeof input.message === "boolean" ? input.message : true,
       mute: typeof input.mute === "boolean" ? input.mute : true,
+      poke: typeof input.poke === "boolean" ? input.poke : true,
       ringtoneIncoming:
         typeof input.ringtoneIncoming === "boolean"
           ? input.ringtoneIncoming

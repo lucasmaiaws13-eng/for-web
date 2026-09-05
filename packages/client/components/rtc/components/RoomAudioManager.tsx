@@ -29,7 +29,12 @@ export function RoomAudioManager() {
     tracks().filter(
       (track) =>
         !isLocal(track.participant) &&
-        track.publication.kind === Track.Kind.Audio,
+        track.publication.kind === Track.Kind.Audio &&
+        // O audio de uma transmissao so entra depois que a pessoa escolhe
+        // assistir. Sem esta linha a live continuaria tocando no ouvido de
+        // quem fechou o video, que e metade do incomodo.
+        (track.source !== Track.Source.ScreenShareAudio ||
+          voice.estaAssistindo(track.participant.identity)),
     ),
   );
 

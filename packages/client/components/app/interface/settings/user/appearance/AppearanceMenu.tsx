@@ -98,7 +98,7 @@ export function AppearanceMenu() {
             groupActive={state.theme.preset === "stoat"}
             onPress={() => state.theme.setPreset("stoat")}
           >
-            <Trans>Stoat</Trans>
+            <>Callju</>
           </Button>
           <Button
             group="connected-end"
@@ -144,7 +144,7 @@ export function AppearanceMenu() {
                 "#9bf088",
                 "#54ecc1",
                 "#549bec",
-                "#5470ec",
+                "#f2701d",
                 "#8C5FD3",
               ]}
             >
@@ -221,6 +221,14 @@ export function AppearanceMenu() {
             <Button
               size="xs"
               group="connected-start"
+              groupActive={state.theme.m3Variant === "caju"}
+              onPress={() => state.theme.setM3Variant("caju")}
+            >
+              🥭 Caju
+            </Button>
+            <Button
+              size="xs"
+              group="connected"
               groupActive={state.theme.m3Variant === "monochrome"}
               onPress={() => state.theme.setM3Variant("monochrome")}
             >

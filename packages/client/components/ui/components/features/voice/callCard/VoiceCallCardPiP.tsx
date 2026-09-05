@@ -130,7 +130,7 @@ const UserIcon = styled("div", {
       true: {
         "& svg": {
           outlineOffset: "1px",
-          outline: "2px solid var(--md-sys-color-primary)",
+          outline: "2px solid var(--callju-accent)",
           borderRadius: "var(--borderRadius-circle)",
         },
       },

@@ -1,5 +1,5 @@
 import { Trans } from "@lingui/solid/macro";
-import { useClient } from "@revolt/client";
+import { TEXTO_CUTUCADA, useClient } from "@revolt/client";
 import { useModals } from "@revolt/modal";
 import { useSmartParams } from "@revolt/routing";
 import { useState } from "@revolt/state";
@@ -44,6 +44,22 @@ export function UserContextMenu(props: {
   function openDm() {
     props.user.openDM().then((channel) => navigate(channel.path));
     props.onClose?.();
+  }
+
+  /**
+   * Cutucar alguem
+   *
+   * Abre o direct com a pessoa e manda o texto de cutucada. Quem recebe ouve
+   * o som na hora, mesmo com a conversa aberta e mesmo sem ter dado permissao
+   * de notificacao para o navegador.
+   */
+  function cutucar() {
+    props.onClose?.();
+
+    props.user
+      .openDM()
+      .then((canal) => canal.sendMessage({ content: TEXTO_CUTUCADA }))
+      .catch((erro) => console.error("[cutucar] nao consegui enviar", erro));
   }
 
   /**
@@ -424,6 +440,18 @@ export function UserContextMenu(props: {
           onClick={mention}
         >
           <Trans>Mention</Trans>
+        </ContextMenuButton>
+      </Show>
+      <Show when={!props.user.self && !props.user.bot}>
+        <ContextMenuButton
+          symbol={
+            <IconSlot>
+              <Symbol size={16}>touch_app</Symbol>
+            </IconSlot>
+          }
+          onClick={cutucar}
+        >
+          <Trans>Cutucar</Trans>
         </ContextMenuButton>
       </Show>
 

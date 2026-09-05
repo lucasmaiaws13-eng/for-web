@@ -73,6 +73,20 @@ export function ParticipantTile(props: TileProps) {
   const isScreenShare = () => track.source === Track.Source.ScreenShare;
   const isSpeaking = useIsSpeaking(participant);
 
+  /**
+   * Se o video desta pessoa deve aparecer
+   *
+   * Camera continua como sempre foi. Transmissao de tela agora espera um
+   * clique: antes o quadro era montado sozinho e, como o VideoTrack se
+   * inscreve na faixa ao aparecer, todo mundo caia dentro da live sem pedir.
+   * A propria tela de quem transmite segue visivel, senao a pessoa perde a
+   * previa do que esta mostrando.
+   */
+  const assistindo = () =>
+    !isScreenShare() ||
+    participant.isLocal ||
+    voice.estaAssistindo(participant.identity);
+
   const getHeight = () => {
     if (!props.focus || videoDims().height == 0) return {};
     // Calculate the aspect ratio
@@ -84,7 +98,9 @@ export function ParticipantTile(props: TileProps) {
   };
 
   return (
-    <Show when={!isScreenShare() || !isRemoteScreenShareMuted()}>
+    <Show
+      when={!isScreenShare() || !assistindo() || !isRemoteScreenShareMuted()}
+    >
       <div
         class={
           tile({
@@ -113,16 +129,62 @@ export function ParticipantTile(props: TileProps) {
         style={{ ...getHeight() }}
       >
         <Show
-          when={isVideo() || isScreenShare()}
+          when={(isVideo() || isScreenShare()) && assistindo()}
           fallback={
-            <AvatarOnly>
-              <Avatar
-                src={user().avatar}
-                fallback={user().username}
-                size={48}
-                interactive={false}
-              />
-            </AvatarOnly>
+            <Show
+              when={isScreenShare() && !assistindo()}
+              fallback={
+                <AvatarOnly>
+                  <Avatar
+                    src={user().avatar}
+                    fallback={user().username}
+                    size={48}
+                    interactive={false}
+                  />
+                </AvatarOnly>
+              }
+            >
+              <ConviteLive>
+                <div
+                  style={{
+                    display: "flex",
+                    "align-items": "center",
+                    gap: "8px",
+                    "min-width": "0",
+                    "font-size": "0.9em",
+                    "font-weight": "600",
+                  }}
+                >
+                  <span
+                    class="callju-speaking"
+                    style={{
+                      width: "8px",
+                      height: "8px",
+                      "flex-shrink": "0",
+                      "border-radius": "99px",
+                      background: "var(--callju-accent)",
+                    }}
+                  />
+                  <OverflowingText>
+                    {user().username} está ao vivo
+                  </OverflowingText>
+                </div>
+
+                <button
+                  class="callju-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    voice.alternarAssistir(participant.identity);
+                  }}
+                  style={{
+                    padding: "9px 20px",
+                    "font-size": "0.85em",
+                  }}
+                >
+                  Assistir
+                </button>
+              </ConviteLive>
+            </Show>
           }
         >
           <VideoTrack
@@ -149,18 +211,36 @@ export function ParticipantTile(props: TileProps) {
             <OverflowingText>{user().username}</OverflowingText>
             <Row gap="md">
               {isScreenShare() ? (
-                <Show when={isScreenShareAudioUserMuted()}>
-                  <Symbol
-                    size={18}
-                    color={
-                      isScreenShareAudioUserMuted() === "by-user"
-                        ? "var(--md-sys-color-error)"
-                        : undefined
-                    }
-                  >
-                    no_sound
-                  </Symbol>
-                </Show>
+                <>
+                  <Show when={isScreenShareAudioUserMuted()}>
+                    <Symbol
+                      size={18}
+                      color={
+                        isScreenShareAudioUserMuted() === "by-user"
+                          ? "var(--md-sys-color-error)"
+                          : undefined
+                      }
+                    >
+                      no_sound
+                    </Symbol>
+                  </Show>
+                  <Show when={assistindo() && !participant.isLocal}>
+                    <button
+                      class="callju-btn-ghost"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        voice.alternarAssistir(participant.identity);
+                      }}
+                      style={{
+                        padding: "5px 12px",
+                        "font-size": "0.75em",
+                        "white-space": "nowrap",
+                      }}
+                    >
+                      Parar de assistir
+                    </button>
+                  </Show>
+                </>
               ) : (
                 <VoiceStatefulUserIcons
                   userId={participant.identity}
@@ -198,7 +278,7 @@ export const tile = cva({
   variants: {
     speaking: {
       true: {
-        outlineColor: "var(--md-sys-color-primary)",
+        outlineColor: "var(--callju-accent)",
       },
     },
     focus: {
@@ -233,6 +313,20 @@ export const tile = cva({
       },
     },
   ],
+});
+
+const ConviteLive = styled("div", {
+  base: {
+    gridArea: "1/1",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "12px",
+    padding: "12px",
+    minWidth: 0,
+    textAlign: "center",
+  },
 });
 
 const AvatarOnly = styled("div", {

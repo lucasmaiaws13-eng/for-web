@@ -39,6 +39,7 @@ export type TypeTheme = {
    * (Material You)
    */
   m3Variant:
+    | "caju"
     | "monochrome"
     | "neutral"
     | "tonal_spot"
@@ -132,9 +133,9 @@ export class Theme extends AbstractStore<"theme", TypeTheme> {
   default(): TypeTheme {
     return {
       preset: "you",
-      mode: "system",
+      mode: "dark",
 
-      m3Accent: "#5470ec",
+      m3Accent: "#f2701d",
       m3Contrast: 0.0,
       m3Variant: "tonal_spot",
 
