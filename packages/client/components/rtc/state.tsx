@@ -38,6 +38,7 @@ import { VoiceCallCardContext } from "@revolt/ui/components/features/voice/callC
 
 import { Device, useDevice } from "@revolt/common";
 import { InRoom } from "./components/InRoom";
+import { PushToTalk } from "./components/PushToTalk";
 import { RoomAudioManager } from "./components/RoomAudioManager";
 import { VoiceProcessor } from "./VoiceProcessor";
 
@@ -266,9 +267,16 @@ class Voice {
       this.#setState("CONNECTED");
       if (this.speakingPermission)
         room.localParticipant
-          .setMicrophoneEnabled(this.#settings.micOn)
+          // Com push to talk o microfone entra fechado e so abre na tecla
+          .setMicrophoneEnabled(
+            this.#settings.micOn && !this.#settings.pushToTalk,
+          )
           .then((track) => {
-            this.#settings.micOn = track != null;
+            // Nesse modo o microfone fechado e o esperado, entao nao deixamos
+            // esta checagem apagar a preferencia de mudo da pessoa.
+            if (!this.#settings.pushToTalk) {
+              this.#settings.micOn = track != null;
+            }
           });
       for (const p of room.remoteParticipants.values()) {
         const screenShareTrack = p.getTrackPublication(
@@ -426,6 +434,17 @@ class Voice {
   async toggleMute() {
     if (this.#settings.deafen) {
       this.toggleDeafen(true);
+      return;
+    }
+
+    // Com push to talk o botao de mudo nao abre nem fecha o microfone agora,
+    // ele decide se a tecla tem efeito. Sem isso o botao brigaria com a
+    // tecla: apertar mudo abriria o microfone, ja que naquele instante ele
+    // esta fechado esperando a tecla.
+    if (this.#settings.pushToTalk) {
+      this.#settings.micOn = !this.#settings.micOn;
+      this.sound.playSound(this.#settings.micOn ? "unmute" : "mute");
+      await this.reconciliarMicrofone();
       return;
     }
     try {
@@ -732,6 +751,53 @@ class Voice {
     }
   }
 
+  /**
+   * Abre ou fecha o microfone conforme a tecla de push to talk
+   *
+   * O mudo e o ensurdecer mandam mais que a tecla: quem esta mudo no botao
+   * nao transmite nem segurando, que e o que as pessoas esperam.
+   */
+  async transmitirPorTecla(segurando: boolean) {
+    const room = this.room();
+    if (!room || !this.speakingPermission) return;
+
+    const abrir =
+      segurando && this.#settings.micOn && !this.#settings.deafen;
+
+    try {
+      if (room.localParticipant.isMicrophoneEnabled !== abrir) {
+        await room.localParticipant.setMicrophoneEnabled(abrir);
+      }
+    } catch (e) {
+      console.warn("[callju] push to talk nao conseguiu mexer no microfone", e);
+    }
+  }
+
+  /**
+   * Recoloca o microfone no estado que as preferencias mandam
+   *
+   * Usado ao ligar ou desligar o push to talk no meio da chamada: ligando, o
+   * microfone fecha na hora e so volta a abrir na tecla; desligando, ele volta
+   * a seguir o botao de mudo.
+   */
+  async reconciliarMicrofone() {
+    const room = this.room();
+    if (!room || !this.speakingPermission) return;
+
+    const abrir =
+      this.#settings.micOn &&
+      !this.#settings.deafen &&
+      !this.#settings.pushToTalk;
+
+    try {
+      if (room.localParticipant.isMicrophoneEnabled !== abrir) {
+        await room.localParticipant.setMicrophoneEnabled(abrir);
+      }
+    } catch (e) {
+      console.warn("[callju] nao consegui ajustar o microfone", e);
+    }
+  }
+
   resetLayout() {
     this.#setLayout();
   }
@@ -886,6 +952,7 @@ export function VoiceContext(props: { children: JSX.Element }) {
         <VoiceCallCardContext>{props.children}</VoiceCallCardContext>
         <InRoom>
           <RoomAudioManager />
+          <PushToTalk />
         </InRoom>
       </RoomContext.Provider>
     </voiceContext.Provider>

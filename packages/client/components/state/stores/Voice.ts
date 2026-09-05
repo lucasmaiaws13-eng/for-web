@@ -45,6 +45,20 @@ export interface TypeVoice {
   deafen: boolean;
   micOn: boolean;
 
+  /**
+   * Se o microfone so transmite enquanto a tecla estiver pressionada
+   */
+  pushToTalk: boolean;
+
+  /**
+   * Tecla do push to talk, no formato KeyboardEvent.code
+   *
+   * Guardamos o 'code' e nao o 'key' de proposito: code identifica a tecla
+   * pela posicao fisica, entao continua funcionando em teclado ABNT, QWERTY
+   * ou AZERTY sem o usuario ter que reconfigurar.
+   */
+  pushToTalkKey: string;
+
   userVolumes: Record<string, number>;
   userMutes: Record<string, boolean>;
 
@@ -86,6 +100,10 @@ export class Voice extends AbstractStore<"voice", TypeVoice> {
       outputVolume: 1.0,
       deafen: false,
       micOn: true,
+      pushToTalk: false,
+      // A tecla acima do Tab. Sobra na maioria dos teclados e fica no alcance
+      // do dedo mindinho esquerdo, longe de WASD.
+      pushToTalkKey: "Backquote",
       userVolumes: {},
       userMutes: {},
       screenShareVolumes: {},
@@ -160,6 +178,14 @@ export class Voice extends AbstractStore<"voice", TypeVoice> {
 
     if (typeof input.micOn === "boolean") {
       data.micOn = input.micOn;
+    }
+
+    if (typeof input.pushToTalk === "boolean") {
+      data.pushToTalk = input.pushToTalk;
+    }
+
+    if (typeof input.pushToTalkKey === "string" && input.pushToTalkKey) {
+      data.pushToTalkKey = input.pushToTalkKey;
     }
 
     if (typeof input.userVolumes === "object") {
@@ -358,6 +384,20 @@ export class Voice extends AbstractStore<"voice", TypeVoice> {
   /**
    * Set deafen status
    */
+  set pushToTalk(value: boolean) {
+    this.set("pushToTalk", value);
+  }
+
+  /**
+   * Set push to talk key
+   */
+  set pushToTalkKey(value: string) {
+    this.set("pushToTalkKey", value);
+  }
+
+  /**
+   * Set deafen
+   */
   set deafen(value: boolean) {
     this.set("deafen", value);
   }
@@ -441,6 +481,20 @@ export class Voice extends AbstractStore<"voice", TypeVoice> {
 
   /**
    * Get deafen status
+   */
+  get pushToTalk(): boolean {
+    return this.get().pushToTalk;
+  }
+
+  /**
+   * Get push to talk key
+   */
+  get pushToTalkKey(): string {
+    return this.get().pushToTalkKey;
+  }
+
+  /**
+   * Get deafen
    */
   get deafen(): boolean {
     return this.get().deafen;
