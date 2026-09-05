@@ -592,6 +592,31 @@ class Voice {
 
         this.#setScreenshare(room.localParticipant.isScreenShareEnabled);
 
+        // A voz do pessoal da call nao pode entrar na transmissao.
+        //
+        // Capturar o audio do sistema traz tudo que sai pela caixa de som,
+        // inclusive o proprio Callju tocando a call. restrictOwnAudio pede ao
+        // navegador para filtrar dessa captura o que a propria pagina esta
+        // tocando, que e exatamente o que precisamos, e ja era pedido logo
+        // acima. Mas a constraint e experimental: quem nao a conhece ignora o
+        // pedido em silencio e a conversa vaza sem ninguem perceber.
+        //
+        // Por isso nao basta pedir, e preciso conferir. Sem a confirmacao do
+        // navegador, transmitir sem som do sistema e melhor do que entregar a
+        // conversa dos outros para quem assiste.
+        if (
+          screenAudioTrack?.track &&
+          !this.#semVazamentoDaCall(screenAudioTrack)
+        ) {
+          console.warn(
+            "[callju] transmitindo sem o som do sistema: o navegador nao " +
+              "confirmou o filtro restrictOwnAudio, e sem ele a voz da call " +
+              "vazaria para quem esta assistindo",
+          );
+
+          room.localParticipant.unpublishTrack(screenAudioTrack.track);
+        }
+
         if (localTrack) {
           // This event is only fired if the screen share is ended by closing the window being streamed.
           // This catches the ending and disables screen sharing on our side. If this weren't here,
@@ -677,6 +702,33 @@ class Voice {
       } catch (e) {
         this.onErr(e);
       }
+    }
+  }
+
+  /**
+   * Se o navegador confirmou que vai tirar da captura o audio da propria
+   * pagina, ou seja, a voz do pessoal da call
+   *
+   * getSettings() so devolve restrictOwnAudio quando o filtro foi mesmo
+   * aplicado. Navegador que nao conhece a constraint ignora o pedido sem
+   * avisar e nao devolve nada aqui, e esse e justamente o caso perigoso.
+   * Por isso a ausencia de confirmacao conta como desprotegido, nunca o
+   * contrario.
+   */
+  #semVazamentoDaCall(publicacao?: LocalTrackPublication) {
+    const faixa = publicacao?.track?.mediaStreamTrack;
+
+    // Sem faixa de audio nao ha o que vazar
+    if (!faixa) return true;
+
+    try {
+      const config = faixa.getSettings() as MediaTrackSettings & {
+        restrictOwnAudio?: boolean;
+      };
+
+      return config.restrictOwnAudio === true;
+    } catch {
+      return false;
     }
   }
 
