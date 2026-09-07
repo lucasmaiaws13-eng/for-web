@@ -14,7 +14,7 @@ import { styled } from "styled-system/jsx";
 
 import { UserContextMenu } from "@revolt/app";
 import { useUser } from "@revolt/markdown/users";
-import { InRoom } from "@revolt/rtc";
+import { InRoom, useVoice } from "@revolt/rtc";
 
 import { Avatar, Ripple, typography } from "../../design";
 import { Row } from "../../layout";
@@ -103,6 +103,7 @@ function ParticipantLive(props: {
   telas: Set<string>;
   cameras: Set<string>;
 }) {
+  const voice = useVoice();
   const participant = useEnsureParticipant();
 
   const isMuted = useIsMuted({
@@ -117,15 +118,14 @@ function ParticipantLive(props: {
       userId={participant.identity}
       speaking={isSpeaking()}
       muted={isMuted()}
-      // Cravado, e nao por esquecimento: nao existe de onde tirar esse valor.
+      // Vem de um servico nosso, nao do Stoat.
       //
-      // Nada no cliente informa o ensurdecimento ao servidor, o campo
-      // is_receiving da API so e lido e nunca escrito, e a stoat.js nao tem
-      // metodo para isso. As duas vias do LiveKit tambem estao fechadas:
-      // o token traz CanPublishData: false e CanUpdateOwnMetadata: false.
-      //
-      // Destravar exige mexer no grant do token, no codigo da API em Rust.
-      deafened={false}
+      // O Stoat nunca terminou isso: is_receiving existe no protocolo mas
+      // nada no servidor dele calcula o valor, e o token do LiveKit fecha as
+      // duas vias que um cliente teria para avisar os outros. Um servico com
+      // chave de administrador grava o estado como atributo do participante,
+      // e e de la que este valor sai.
+      deafened={voice.estaSurdo(participant.identity)}
       camera={props.cameras.has(participant.identity)}
       screenshare={props.telas.has(participant.identity)}
       isLive

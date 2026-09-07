@@ -100,10 +100,23 @@ class Voice {
   assistindo: Accessor<Set<string>>;
   #setAssistindo: Setter<Set<string>>;
 
+  /**
+   * Quem esta ensurdecido na chamada
+   *
+   * O Stoat nao transmite esse estado: o campo is_receiving existe no
+   * protocolo mas nada no servidor dele o calcula, e o token do LiveKit fecha
+   * as duas vias que um cliente teria para avisar os outros. Entao um servico
+   * nosso, com chave de administrador, grava isso como atributo do
+   * participante, e a volta chega aqui pelo proprio LiveKit.
+   */
+  surdos: Accessor<Set<string>>;
+  #setSurdos: Setter<Set<string>>;
+
   private sound: SoundController;
   private device: Device;
 
   private openModal;
+  private instancia;
   private config;
   private limits;
   private screenShareTracks: Set<string>;
@@ -160,7 +173,12 @@ class Voice {
     this.assistindo = assistindo;
     this.#setAssistindo = setAssistindo;
 
+    const [surdos, setSurdos] = createSignal<Set<string>>(new Set());
+    this.surdos = surdos;
+    this.#setSurdos = setSurdos;
+
     const inst = useInstance();
+    this.instancia = inst;
     this.config = inst.config;
     this.limits = inst.limits;
     this.openModal = modals.openModal;
@@ -287,9 +305,16 @@ class Voice {
         }
       }
       this.sound.playSound("userJoinVoice");
+      this.#relerSurdos();
+      this.avisarSurdez();
     });
 
     room.addListener("disconnected", () => this.#setState("DISCONNECTED"));
+
+    // O LiveKit avisa todo mundo quando um atributo muda, e quem entra depois
+    // ja recebe os atributos atuais junto da lista de participantes. Por isso
+    // atributo, e nao mensagem solta: mensagem quem chega atrasado perde.
+    room.addListener("participantAttributesChanged", () => this.#relerSurdos());
 
     room.addListener("localTrackPublished", (pub) => {
       if (pub.audioTrack && pub.audioTrack.source === Track.Source.Microphone) {
@@ -376,6 +401,7 @@ class Voice {
 
       this.screenShareTracks = new Set();
       this.#setAssistindo(new Set());
+      this.#setSurdos(new Set());
 
       this.sound.playSound("userLeaveVoice");
     } catch (e) {
@@ -401,6 +427,8 @@ class Voice {
       } else {
         this.sound.playSound("undeafen");
       }
+
+      this.avisarSurdez();
     } catch (e) {
       this.onErr(e);
     }
@@ -809,6 +837,62 @@ class Voice {
 
   getConnectedUser(userId: string) {
     return this.room()?.getParticipantByIdentity(userId);
+  }
+
+  /**
+   * Se a pessoa esta ensurdecida
+   */
+  estaSurdo(identidade: string) {
+    return this.surdos().has(identidade);
+  }
+
+  /**
+   * Refaz a lista de quem esta ensurdecido a partir dos atributos
+   */
+  #relerSurdos() {
+    const room = this.room();
+    if (!room) return;
+
+    const proximo = new Set<string>();
+
+    for (const p of room.remoteParticipants.values()) {
+      if (p.attributes?.surdo) proximo.add(p.identity);
+    }
+
+    if (room.localParticipant.attributes?.surdo) {
+      proximo.add(room.localParticipant.identity);
+    }
+
+    this.#setSurdos(proximo);
+  }
+
+  /**
+   * Conta ao servico o estado atual de ensurdecimento
+   *
+   * O cliente nao pode gravar o proprio atributo, o token do Stoat proibe.
+   * Entao pedimos ao nosso servico, que tem chave de administrador. Ele nao
+   * acredita em quem dizemos ser: valida a sessao contra a API do Stoat.
+   */
+  async avisarSurdez() {
+    const room = this.room();
+    const canal = this.channel();
+    if (!room || !canal) return;
+
+    try {
+      await fetch("/estado/surdo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: this.instancia.client.authenticationHeader[1],
+          canal: canal.id,
+          surdo: this.#settings.deafen,
+        }),
+      });
+    } catch (e) {
+      // Nao poder avisar so significa que os outros nao veem o icone.
+      // Nao e motivo para atrapalhar a chamada de ninguem.
+      console.warn("[callju] nao consegui avisar o ensurdecer", e);
+    }
   }
 
   /**
