@@ -3,7 +3,7 @@ import { AudioTrack, useTracks } from "solid-livekit-components";
 
 import { getTrackReferenceId, isLocal } from "@livekit/components-core";
 import { Key } from "@solid-primitives/keyed";
-import { RemoteTrackPublication, Track } from "livekit-client";
+import { RemoteTrackPublication, RoomEvent, Track } from "livekit-client";
 
 import { useState } from "@revolt/state";
 
@@ -20,7 +20,17 @@ export function RoomAudioManager() {
       Track.Source.Unknown,
     ],
     {
-      updateOnlyOn: [],
+      // Estes dois eventos faltavam, e a ausencia deles deixava gente muda.
+      //
+      // updateOnlyOn nao acrescenta ao padrao do LiveKit, ele SUBSTITUI. Com
+      // a lista vazia sobrava so o conjunto obrigatorio, que avisa quando a
+      // faixa e publicada mas nao quando ela e de fato assinada. O elemento de
+      // audio era montado antes da faixa existir e ficava parado ali, mudo,
+      // ate alguem mexer no volume e forcar os efeitos a rodarem de novo.
+      //
+      // A lista segue curta de proposito: o padrao do LiveKit inclui eventos
+      // de quem esta falando, que refariam esta lista a cada fala.
+      updateOnlyOn: [RoomEvent.TrackSubscribed, RoomEvent.TrackUnsubscribed],
       onlySubscribed: false,
     },
   );
