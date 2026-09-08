@@ -26,7 +26,7 @@ import MdSettings from "@material-design-icons/svg/filled/settings.svg?component
 
 
 import { HeaderIcon } from "./common/CommonHeader";
-import { AvisoModal, GuiaModal, PixModal } from "./CalljuModals";
+import { AppModal, AvisoModal, GuiaModal, PixModal } from "./CalljuModals";
 
 // >>> TROQUE AQUI pela sua chave Pix (CPF, telefone, email ou aleatoria)
 const CHAVE_PIX = "+5591983673239";
@@ -185,6 +185,7 @@ export function HomePage() {
 
   const [guiaAberto, setGuiaAberto] = createSignal(false);
   const [pixAberto, setPixAberto] = createSignal(false);
+  const [appAberto, setAppAberto] = createSignal(false);
   const [avisoAberto, setAvisoAberto] = createSignal(false);
   const conviteConfigurado = CONVITE_SERVIDOR !== "cole-o-codigo-do-convite-aqui";
 
@@ -390,6 +391,12 @@ export function HomePage() {
             onClick={() => setGuiaAberto(true)}
           />
           <CartaoAcao
+            emoji="🖥️"
+            titulo="Baixe o app pro PC"
+            texto="Sem aba de navegador, e se atualiza sozinho"
+            onClick={() => setAppAberto(true)}
+          />
+          <CartaoAcao
             emoji="🧡"
             titulo="Me ajude a manter no ar"
             texto="O servidor tem custo mensal"
@@ -410,6 +417,8 @@ export function HomePage() {
           fechar={() => setPixAberto(false)}
           chave={CHAVE_PIX}
         />
+
+        <AppModal aberto={appAberto()} fechar={() => setAppAberto(false)} />
 
         <AvisoModal
           aberto={avisoAberto()}

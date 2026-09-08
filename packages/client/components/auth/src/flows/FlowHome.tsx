@@ -131,6 +131,24 @@ export default function FlowHome() {
                   Criar conta
                 </button>
               </a>
+
+              {/* Link do app, discreto de proposito: quem chega aqui ainda nao
+                  tem conta, entao entrar vem primeiro. O endereco /latest/ do
+                  GitHub aponta sempre para a versao mais nova, entao nao
+                  precisa ser trocado a cada lancamento. */}
+              <a
+                href="https://github.com/lucasmaiaws13-eng/for-desktop/releases/latest/download/callju-setup.exe"
+                style={{
+                  "text-align": "center",
+                  "font-size": "0.86em",
+                  opacity: "0.55",
+                  "text-decoration": "none",
+                  color: "inherit",
+                  "margin-top": "4px",
+                }}
+              >
+                🖥️ Baixe o app para Windows
+              </a>
             </Column>
           </Column>
         </>

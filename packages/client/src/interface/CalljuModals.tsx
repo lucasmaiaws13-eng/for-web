@@ -453,3 +453,108 @@ export function AvisoModal(props: {
     </Overlay>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/* Baixar o app para computador                                        */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Endereco fixo da versao mais recente.
+ *
+ * O GitHub mantem /releases/latest apontando sempre para a ultima versao
+ * publicada, entao este link nao precisa ser trocado a cada lancamento.
+ */
+export const LINK_DO_APP =
+  "https://github.com/lucasmaiaws13-eng/for-desktop/releases/latest/download/callju-setup.exe";
+
+export function AppModal(props: { aberto: boolean; fechar: () => void }) {
+  return (
+    <Overlay aberto={props.aberto} fechar={props.fechar} largura="440px">
+      <div
+        style={{
+          display: "flex",
+          "align-items": "center",
+          "justify-content": "space-between",
+        }}
+      >
+        <span style={{ "font-size": "2em", "line-height": "1" }}>🖥️</span>
+        <BotaoFechar onClick={props.fechar} />
+      </div>
+
+      <h2
+        style={{
+          "font-size": "1.3em",
+          "font-weight": "800",
+          margin: "14px 0 8px",
+          "letter-spacing": "-0.015em",
+        }}
+      >
+        Callju no seu computador
+      </h2>
+
+      <p style={{ "line-height": "1.62", opacity: "0.78", margin: "0 0 16px" }}>
+        É o mesmo Callju, mas como programa. Sem aba de navegador se perdendo no
+        meio de mil outras, com ícone do lado do relógio e notificação de
+        verdade. E ele se atualiza sozinho, você não precisa baixar de novo.
+      </p>
+
+      <div
+        style={{
+          padding: "14px 16px",
+          "border-radius": "12px",
+          background: "var(--md-sys-color-surface-variant)",
+          "border-inline-start": "3px solid var(--callju-accent)",
+          "margin-bottom": "18px",
+        }}
+      >
+        <div
+          style={{
+            "font-weight": "700",
+            "font-size": "0.95em",
+            "margin-bottom": "6px",
+          }}
+        >
+          O Windows vai reclamar. É esperado.
+        </div>
+        <div style={{ "line-height": "1.6", opacity: "0.78", "font-size": "0.92em" }}>
+          Vai aparecer uma tela azul dizendo "O Windows protegeu o seu
+          computador". Clica em <b>Mais informações</b> e depois em{" "}
+          <b>Executar assim mesmo</b>.
+          <br />
+          <br />
+          Isso acontece porque o instalador não tem assinatura digital, que é um
+          certificado que custa mais de mil reais por ano. O aviso não diz que
+          tem vírus, diz que o Windows não conhece quem assinou. Só aparece na
+          primeira instalação.
+        </div>
+      </div>
+
+      <a
+        class="callju-btn"
+        href={LINK_DO_APP}
+        style={{
+          display: "block",
+          width: "100%",
+          padding: "13px",
+          "font-size": "0.98em",
+          "text-align": "center",
+          "text-decoration": "none",
+          "box-sizing": "border-box",
+        }}
+      >
+        Baixar para Windows
+      </a>
+
+      <p
+        style={{
+          "text-align": "center",
+          opacity: "0.42",
+          "font-size": "0.85em",
+          margin: "16px 0 0",
+        }}
+      >
+        Por enquanto só Windows. No Mac e no Linux, o site funciona igual.
+      </p>
+    </Overlay>
+  );
+}
