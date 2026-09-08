@@ -286,6 +286,78 @@ export function HomePage() {
           </div>
         </div>
 
+        {/* Banner do app.
+            Fica acima do botao de entrar no servidor de proposito: e a
+            novidade, e novidade so funciona se for vista. Quando o app deixar
+            de ser novidade, isto volta a ser so o cartao la embaixo. */}
+        <button
+          class="callju-lift callju-rise"
+          onClick={() => setAppAberto(true)}
+          style={{
+            width: "100%",
+            "max-width": "540px",
+            padding: "14px 18px",
+            display: "flex",
+            "align-items": "center",
+            gap: "14px",
+            "text-align": "start",
+            cursor: "pointer",
+            "border-radius": "14px",
+            border: "1px solid var(--callju-accent-line)",
+            background: "var(--callju-accent-soft)",
+          }}
+        >
+          <span
+            style={{
+              width: "38px",
+              height: "38px",
+              "flex-shrink": "0",
+              display: "flex",
+              "align-items": "center",
+              "justify-content": "center",
+              "border-radius": "10px",
+              "font-size": "1.15em",
+              background: "var(--callju-grad)",
+            }}
+          >
+            🖥️
+          </span>
+
+          <span style={{ flex: "1", "min-width": "0" }}>
+            <span
+              style={{
+                display: "block",
+                "font-size": "0.98em",
+                "font-weight": "700",
+                "letter-spacing": "-0.01em",
+                color: "var(--callju-accent)",
+              }}
+            >
+              Agora em app! Faça o download
+            </span>
+            <span
+              style={{
+                display: "block",
+                "font-size": "0.84em",
+                opacity: "0.6",
+                "margin-top": "2px",
+              }}
+            >
+              Sem aba de navegador, e se atualiza sozinho
+            </span>
+          </span>
+
+          <span
+            style={{
+              "flex-shrink": "0",
+              "font-size": "1.15em",
+              color: "var(--callju-accent)",
+            }}
+          >
+            &rsaquo;
+          </span>
+        </button>
+
         <Show when={conviteConfigurado}>
           <button
             class="callju-btn callju-rise"
