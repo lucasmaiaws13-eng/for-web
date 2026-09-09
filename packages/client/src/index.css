@@ -11,14 +11,14 @@
 :root {
   /* Caju: laranja quente puxando para um vermelho terroso.
      Evita de proposito o vermelho puro, que o olho le como "recusar". */
-  --callju-1: #ffab42;
-  --callju-2: #f97316;
-  --callju-3: #e85423;
-  --callju-4: #d9452b;
+  --callju-1: #f0a24c;
+  --callju-2: #ec8a3c;
+  --callju-3: #d86c30;
+  --callju-4: #a83018;
 
-  --callju-accent: #f2701d;
-  --callju-accent-soft: rgba(242, 112, 29, 0.14);
-  --callju-accent-line: rgba(242, 112, 29, 0.32);
+  --callju-accent: #e8823c;
+  --callju-accent-soft: rgba(232, 130, 60, 0.14);
+  --callju-accent-line: rgba(232, 130, 60, 0.32);
 
   --callju-grad: linear-gradient(
     120deg,

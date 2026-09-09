@@ -21,7 +21,14 @@ const isNative = !!window.native;
 
 export function Titlebar() {
   const [isMaximised, setIsMaximised] = createSignal(
-    isNative ? window.desktopConfig.get().windowState.isMaximised : false,
+    // Sem as protecoes, esta linha derruba o app inteiro numa tela preta.
+    //
+    // isNative diz que estamos no app desktop, mas nao garante que a ponte
+    // desktopConfig existiu: se ela falhar ao carregar, o acesso direto
+    // estoura, a barra de titulo morre e leva a arvore toda junto. No
+    // navegador isso nunca aparece, porque isNative e falso. A linha 46 ja
+    // usava ?. justamente por isso; esta tinha ficado para tras.
+    isNative ? (window.desktopConfig?.get()?.windowState?.isMaximised ?? false) : false,
   );
   const { lifecycle } = useClientLifecycle();
 
