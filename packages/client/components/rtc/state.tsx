@@ -15,7 +15,6 @@ import {
 } from "solid-livekit-components";
 
 import {
-  AudioPresets,
   LocalTrackPublication,
   Room,
   ScreenShareCaptureOptions,
@@ -265,9 +264,15 @@ class Voice {
         screenShareEncoding: ScreenSharePresets.h720fps30.encoding,
 
         // Audio estava sem configuracao nenhuma aqui, caindo no padrao do
-        // LiveKit, que e 32 kbps. O Discord usa 64. Era metade da taxa dele,
-        // e essa e a maior parte da diferenca de qualidade que se escuta.
-        audioPreset: AudioPresets.musicHighQuality,
+        // LiveKit, que e 32 kbps. O Discord usa 64, e ate 96 em servidor de
+        // comunidade. Era metade da taxa dele, e essa e a maior parte da
+        // diferenca de qualidade que se escuta, mais que supressao de ruido.
+        //
+        // 96 kbps, o teto do Discord. Vai como objeto proprio em vez do preset
+        // pronto porque o preset de 96 do LiveKit e estereo, e microfone e
+        // fonte unica: em estereo metade dos bits duplicaria o mesmo audio.
+        // Em mono os 96 inteiros vao para a voz.
+        audioPreset: { maxBitrate: 96_000 },
 
         // Reducao de dados de fundo. Ganha banda mas engole o comecinho das
         // frases quando alguem volta a falar, e voz cortando incomoda mais do
