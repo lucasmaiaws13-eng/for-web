@@ -20,20 +20,36 @@
   --callju-accent-soft: rgba(232, 130, 60, 0.14);
   --callju-accent-line: rgba(232, 130, 60, 0.32);
 
+  /* O degrade da textura do Lucas: o vermelho profundo ocupa a primeira
+     metade e so entao abre para o laranja. A versao anterior espalhava as
+     quatro cores de forma parelha, e o tom profundo acabava espremido na
+     pontinha, sumindo em botao largo. */
   --callju-grad: linear-gradient(
-    120deg,
-    var(--callju-1) 0%,
-    var(--callju-2) 42%,
-    var(--callju-3) 74%,
-    var(--callju-4) 100%
+    115deg,
+    #8f1d0a 0%,
+    #a8300f 20%,
+    #c9551f 45%,
+    #e8823c 74%,
+    #f2a355 100%
   );
+
+  /* A granulacao.
+     Gerada em SVG e nao como imagem: um feTurbulence pesa uns poucos bytes,
+     escala em qualquer tamanho sem borrar e nao precisa ser baixado. */
+  --callju-grao: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)'/%3E%3C/svg%3E");
 
   --callju-ease: cubic-bezier(0.2, 0.7, 0.3, 1);
 }
 
 /* Texto preenchido com o degrade (usado no wordmark) */
 .callju-wordmark {
-  background: var(--callju-grad);
+  /* O grao vem antes do degrade na lista: em CSS a primeira camada fica por
+     cima. multiply escurece so os pontinhos, entao o resultado e granulado e
+     nao sujo. */
+  background:
+    var(--callju-grao),
+    var(--callju-grad);
+  background-blend-mode: multiply, normal;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -45,9 +61,16 @@
   cursor: pointer;
   color: #fff;
   font-weight: 600;
-  background: var(--callju-grad);
-  background-size: 140% 140%;
-  background-position: 0% 50%;
+  background:
+    var(--callju-grao),
+    var(--callju-grad);
+  background-blend-mode: multiply, normal;
+  background-size:
+    180px 180px,
+    140% 140%;
+  background-position:
+    0 0,
+    0% 50%;
   border-radius: 999px;
   transition:
     transform 150ms var(--callju-ease),
@@ -57,7 +80,9 @@
 .callju-btn:hover {
   transform: translateY(-1px);
   filter: brightness(1.06) saturate(1.04);
-  background-position: 100% 50%;
+  background-position:
+    0 0,
+    100% 50%;
 }
 .callju-btn:active {
   transform: translateY(0);
