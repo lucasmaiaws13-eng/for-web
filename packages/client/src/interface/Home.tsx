@@ -265,7 +265,16 @@ export function HomePage() {
               "line-height": "1.1",
             }}
           >
-            <span style={{ transform: "translateY(-0.06em)" }}>🥭</span>
+            <img
+                  src="/assets/web/callju-marca.png"
+                  alt=""
+                  style={{
+                    width: "1.1em",
+                    height: "1.1em",
+
+                    transform: "translateY(-0.02em)",
+                  }}
+                />
             <span
               class="callju-wordmark"
               style={{ "letter-spacing": "-0.035em" }}
