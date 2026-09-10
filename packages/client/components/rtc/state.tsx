@@ -15,6 +15,7 @@ import {
 } from "solid-livekit-components";
 
 import {
+  AudioPresets,
   LocalTrackPublication,
   Room,
   ScreenShareCaptureOptions,
@@ -262,6 +263,19 @@ class Voice {
       publishDefaults: {
         videoEncoding: VideoPresets.h720.encoding,
         screenShareEncoding: ScreenSharePresets.h720fps30.encoding,
+
+        // Audio estava sem configuracao nenhuma aqui, caindo no padrao do
+        // LiveKit, que e 32 kbps. O Discord usa 64. Era metade da taxa dele,
+        // e essa e a maior parte da diferenca de qualidade que se escuta.
+        audioPreset: AudioPresets.musicHighQuality,
+
+        // Reducao de dados de fundo. Ganha banda mas engole o comecinho das
+        // frases quando alguem volta a falar, e voz cortando incomoda mais do
+        // que banda gasta numa call de dez pessoas.
+        dtx: false,
+
+        // Manda audio redundante para aguentar perda de pacote sem picotar.
+        red: true,
       },
     });
 
