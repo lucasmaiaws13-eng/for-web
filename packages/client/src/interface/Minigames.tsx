@@ -12,7 +12,7 @@ import { cva } from "styled-system/css";
 import { styled } from "styled-system/jsx";
 
 import { useClient } from "@revolt/client";
-import { useNavigate, useParams } from "@revolt/routing";
+import { useLocation, useNavigate, useParams } from "@revolt/routing";
 import { Avatar, Header, main } from "@revolt/ui";
 import { Symbol } from "@revolt/ui/components/utils/Symbol";
 
@@ -24,6 +24,14 @@ import { HeaderIcon } from "./common/CommonHeader";
 
 type Direcao = "H" | "V";
 type Casa = [number, number];
+type Nivel = "normal" | "expert";
+
+const NIVEIS: Nivel[] = ["normal", "expert"];
+
+const NIVEL_INFO: Record<Nivel, { nome: string; descricao: string }> = {
+  normal: { nome: "Normal", descricao: "palavras do dia a dia" },
+  expert: { nome: "Expert", descricao: "vocabulário e cultura cabeludos" },
+};
 
 type Dica = {
   numero: number;
@@ -42,7 +50,6 @@ type Grade = {
 };
 
 type Estado = {
-  data: string;
   tamanho: number;
   iniciou: boolean;
   terminou: boolean;
@@ -51,6 +58,8 @@ type Estado = {
   ajuda: boolean;
   equipe: { id: string; nome: string } | null;
 };
+
+type Status = { data: string; niveis: Record<Nivel, Estado> };
 
 type LinhaRanking = {
   id: string;
@@ -78,8 +87,11 @@ type Ranking = {
   equipes_jogando: number;
 };
 
+type RespostaRanking = { data: string; niveis: Record<Nivel, Ranking> };
+
 type ResumoSala = {
   id: string;
+  nivel: Nivel;
   nome: string;
   tamanho: number;
   online: Membro[];
@@ -101,6 +113,7 @@ type FotoSala = {
   sala: {
     id: string;
     tipo: "livre" | "equipe";
+    nivel: Nivel;
     nome: string;
     data: string | null;
     dono: string;
@@ -148,6 +161,33 @@ const conteudo = cva({
   },
 });
 
+const cartaoJogo = cva({
+  base: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-start",
+    gap: "10px",
+    padding: "18px",
+    minHeight: "230px",
+    borderRadius: "18px",
+    border: "1px solid var(--md-sys-color-outline-variant)",
+    background: "var(--md-sys-color-surface-container-high)",
+    color: "var(--md-sys-color-on-surface)",
+    cursor: "pointer",
+    textAlign: "start",
+    font: "inherit",
+    transition: "transform 150ms ease, border-color 150ms ease",
+    _hover: {
+      transform: "translateY(-2px)",
+      borderColor: "var(--callju-accent-line)",
+    },
+    _focusVisible: {
+      outline: "2px solid var(--callju-accent)",
+      outlineOffset: "2px",
+    },
+  },
+});
+
 const cartao = {
   width: "100%",
   "max-width": "560px",
@@ -187,6 +227,19 @@ const selo = {
   "white-space": "nowrap",
 } as const;
 
+const paragrafo = {
+  margin: "16px 0",
+  "line-height": "1.55",
+  opacity: "0.8",
+  "font-size": "0.92em",
+} as const;
+
+const botaoPrincipal = {
+  width: "100%",
+  padding: "13px",
+  "font-size": "1em",
+} as const;
+
 function formataTempo(ms: number) {
   const s = Math.max(0, Math.floor(ms / 1000));
   const h = Math.floor(s / 3600);
@@ -221,6 +274,26 @@ const casasDe = (d: Dica): Casa[] =>
   Array.from({ length: d.tamanho }, (_, i) =>
     d.direcao === "H" ? [d.linha, d.coluna + i] : [d.linha + i, d.coluna],
   );
+
+/* O nivel escolhido fica lembrado neste navegador */
+const CHAVE_NIVEL = "callju-cruzada-nivel";
+
+function nivelSalvo(): Nivel {
+  try {
+    const n = localStorage.getItem(CHAVE_NIVEL);
+    return n === "expert" ? "expert" : "normal";
+  } catch {
+    return "normal";
+  }
+}
+
+function salvarNivel(n: Nivel) {
+  try {
+    localStorage.setItem(CHAVE_NIVEL, n);
+  } catch {
+    // Sem armazenamento local, so volta pro Normal na proxima visita
+  }
+}
 
 class ErroApi extends Error {
   constructor(
@@ -315,14 +388,100 @@ function Pilha(props: { membros: Membro[]; tamanho: number }) {
   );
 }
 
+/**
+ * Icone das palavras cruzadas: uma grade 5x5 com CAJU na horizontal
+ * cruzando JAMBU na vertical, e UXI embaixo.
+ */
+function IconeCruzada(props: { tamanho: number }) {
+  const letras: [number, number, string][] = [
+    [0, 1, "J"],
+    [1, 0, "C"],
+    [1, 1, "A"],
+    [1, 2, "J"],
+    [1, 3, "U"],
+    [2, 1, "M"],
+    [3, 1, "B"],
+    [4, 1, "U"],
+    [4, 2, "X"],
+    [4, 3, "I"],
+  ];
+  const lado = 10;
+  const passo = 11.5;
+  const inicio = 4;
+
+  return (
+    <svg
+      width={props.tamanho}
+      height={props.tamanho}
+      viewBox="0 0 64 64"
+      role="img"
+      aria-label="Palavras cruzadas"
+    >
+      <defs>
+        <linearGradient id="callju-icone-cruzada" x1="0" y1="1" x2="1" y2="0">
+          <stop offset="0" stop-color="#8f1d0a" />
+          <stop offset="0.45" stop-color="#c9551f" />
+          <stop offset="0.75" stop-color="#e8823c" />
+          <stop offset="1" stop-color="#f2a355" />
+        </linearGradient>
+      </defs>
+      <rect width="64" height="64" rx="15" fill="url(#callju-icone-cruzada)" />
+      <For each={Array.from({ length: 25 }, (_, i) => i)}>
+        {(i) => (
+          <rect
+            x={inicio + (i % 5) * passo}
+            y={inicio + Math.floor(i / 5) * passo}
+            width={lado}
+            height={lado}
+            rx="2.5"
+            fill="rgba(20, 8, 4, 0.22)"
+          />
+        )}
+      </For>
+      <For each={letras}>
+        {([r, c, l]) => {
+          const cruzamento = r === 1 && c === 1;
+          return (
+            <>
+              <rect
+                x={inicio + c * passo}
+                y={inicio + r * passo}
+                width={lado}
+                height={lado}
+                rx="2.5"
+                fill={cruzamento ? "#1b0f0a" : "rgba(255, 255, 255, 0.94)"}
+              />
+              <text
+                x={inicio + c * passo + lado / 2}
+                y={inicio + r * passo + lado / 2 + 0.4}
+                text-anchor="middle"
+                dominant-baseline="central"
+                font-size="7"
+                font-weight="800"
+                font-family="inherit"
+                fill={cruzamento ? "#f2a355" : "#7a2a0c"}
+              >
+                {l}
+              </text>
+            </>
+          );
+        }}
+      </For>
+    </svg>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /* Pagina                                                              */
 /* ------------------------------------------------------------------ */
 
 export function MinigamesPage() {
   const params = useParams<{ id?: string }>();
+  const location = useLocation();
   const navigate = useNavigate();
   const chamar = useApi();
+
+  const naCruzada = () => location.pathname.startsWith("/minigames/cruzadas");
 
   return (
     <Base>
@@ -336,12 +495,20 @@ export function MinigamesPage() {
       </Header>
 
       <div use:scrollable={{ class: conteudo() }}>
-        <Show when={params.id} keyed fallback={<Inicio chamar={chamar} />}>
+        <Show
+          when={params.id}
+          keyed
+          fallback={
+            <Show when={naCruzada()} fallback={<TelaInicial chamar={chamar} />}>
+              <Cruzadas chamar={chamar} />
+            </Show>
+          }
+        >
           {(id) => (
             <SalaEmGrupo
               id={id}
               chamar={chamar}
-              voltar={() => navigate("/minigames")}
+              voltar={() => navigate("/minigames/cruzadas")}
             />
           )}
         </Show>
@@ -351,14 +518,142 @@ export function MinigamesPage() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Tela inicial: cruzada do dia, ranking e salas em grupo              */
+/* Tela inicial: escolher o minigame                                   */
 /* ------------------------------------------------------------------ */
 
-function Inicio(props: { chamar: Api }) {
+function TelaInicial(props: { chamar: Api }) {
+  const navigate = useNavigate();
+  const [status, setStatus] = createSignal<Status>();
+
+  onMount(async () => {
+    try {
+      setStatus(await props.chamar<Status>("/cruzada/status"));
+    } catch {
+      // Sem o servico, o cartao so fica sem o resumo do dia
+    }
+  });
+
+  return (
+    <div
+      style={{
+        width: "100%",
+        "max-width": "720px",
+        display: "flex",
+        "flex-direction": "column",
+        gap: "18px",
+      }}
+    >
+      <div>
+        <div
+          style={{
+            "font-size": "1.6em",
+            "font-weight": "800",
+            "letter-spacing": "-0.02em",
+          }}
+        >
+          Minigames
+        </div>
+        <div style={{ opacity: "0.6", "font-size": "0.92em", "margin-top": "2px" }}>
+          Joguinhos rápidos pra jogar sozinho ou com a galera do Callju.
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          "grid-template-columns": "repeat(auto-fill, minmax(230px, 1fr))",
+          gap: "14px",
+        }}
+      >
+        <button class={cartaoJogo()} onClick={() => navigate("/minigames/cruzadas")}>
+          <IconeCruzada tamanho={68} />
+          <div
+            style={{
+              "font-size": "1.15em",
+              "font-weight": "750",
+              "letter-spacing": "-0.01em",
+              "margin-top": "4px",
+            }}
+          >
+            Palavras cruzadas
+          </div>
+          <div style={{ opacity: "0.6", "font-size": "0.86em", "line-height": "1.45" }}>
+            Uma grade 9x9 nova todo dia, no Normal e no Expert. Sozinho, em
+            equipe ou em grupo.
+          </div>
+          <div style={{ display: "flex", gap: "6px", "flex-wrap": "wrap", "margin-top": "auto" }}>
+            <For each={NIVEIS}>
+              {(n) => (
+                <span
+                  style={{
+                    ...selo,
+                    display: "inline-flex",
+                    "align-items": "center",
+                    gap: "3px",
+                    background: status()?.niveis[n].terminou
+                      ? "var(--callju-accent-soft)"
+                      : "var(--md-sys-color-surface-variant)",
+                    color: status()?.niveis[n].terminou ? "var(--callju-accent)" : undefined,
+                  }}
+                >
+                  <Show when={status()?.niveis[n].terminou}>
+                    <Symbol size={13}>check</Symbol>
+                  </Show>
+                  {NIVEL_INFO[n].nome}
+                </span>
+              )}
+            </For>
+          </div>
+        </button>
+
+        <div
+          style={{
+            display: "flex",
+            "flex-direction": "column",
+            "align-items": "center",
+            "justify-content": "center",
+            gap: "12px",
+            padding: "18px",
+            "min-height": "230px",
+            "border-radius": "18px",
+            border: "2px dashed var(--md-sys-color-outline-variant)",
+            "text-align": "center",
+            "box-sizing": "border-box",
+          }}
+        >
+          <div
+            style={{
+              width: "56px",
+              height: "56px",
+              display: "grid",
+              "place-items": "center",
+              "border-radius": "16px",
+              background: "var(--md-sys-color-surface-container-high)",
+              color: "var(--callju-accent)",
+            }}
+          >
+            <Symbol size={28}>add</Symbol>
+          </div>
+          <div style={{ "font-weight": "700" }}>Mais minigames em breve!</div>
+          <div style={{ opacity: "0.5", "font-size": "0.82em", "max-width": "200px" }}>
+            Tem ideia de jogo? Manda pro Lucas.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Palavras cruzadas: nivel, cruzada do dia, ranking e salas em grupo  */
+/* ------------------------------------------------------------------ */
+
+function Cruzadas(props: { chamar: Api }) {
   const navigate = useNavigate();
 
-  const [status, setStatus] = createSignal<Estado>();
-  const [ranking, setRanking] = createSignal<Ranking>();
+  const [nivel, setNivelInterno] = createSignal<Nivel>(nivelSalvo());
+  const [status, setStatus] = createSignal<Status>();
+  const [ranking, setRanking] = createSignal<RespostaRanking>();
   const [salas, setSalas] = createSignal<ResumoSala[]>();
   const [jogando, setJogando] = createSignal(false);
   const [erro, setErro] = createSignal("");
@@ -368,11 +663,22 @@ function Inicio(props: { chamar: Api }) {
   const [erroEquipe, setErroEquipe] = createSignal("");
   const [ocupado, setOcupado] = createSignal(false);
 
+  function setNivel(n: Nivel) {
+    setNivelInterno(n);
+    salvarNivel(n);
+    setMontandoEquipe(false);
+    setErroEquipe("");
+  }
+
+  const estado = () => status()?.niveis[nivel()];
+  const nomeNivel = () => NIVEL_INFO[nivel()].nome;
+  const salasDoNivel = () => (salas() ?? []).filter((s) => s.nivel === nivel());
+
   async function atualizar() {
     try {
       const [s, r, g] = await Promise.all([
-        props.chamar<Estado>("/cruzada/status"),
-        props.chamar<Ranking>("/cruzada/ranking"),
+        props.chamar<Status>("/cruzada/status"),
+        props.chamar<RespostaRanking>("/cruzada/ranking"),
         props.chamar<{ salas: ResumoSala[] }>("/grupo/salas"),
       ]);
       setStatus(s);
@@ -403,6 +709,7 @@ function Inicio(props: { chamar: Api }) {
     try {
       const r = await props.chamar<{ id: string }>("/grupo/criar", {
         tipo: "equipe",
+        nivel: nivel(),
         nome: nomeEquipe(),
       });
       navigate(`/minigames/sala/${r.id}`);
@@ -421,6 +728,7 @@ function Inicio(props: { chamar: Api }) {
     try {
       const r = await props.chamar<{ id: string }>("/grupo/criar", {
         tipo: "livre",
+        nivel: nivel(),
       });
       navigate(`/minigames/sala/${r.id}`);
     } catch (err) {
@@ -435,6 +743,7 @@ function Inicio(props: { chamar: Api }) {
       when={!jogando()}
       fallback={
         <Cruzada
+          nivel={nivel()}
           chamar={props.chamar}
           aoTerminar={atualizar}
           irParaEquipe={(id) => navigate(`/minigames/sala/${id}`)}
@@ -445,6 +754,21 @@ function Inicio(props: { chamar: Api }) {
         />
       }
     >
+      <div
+        style={{
+          width: "100%",
+          "max-width": "560px",
+          display: "flex",
+          "flex-direction": "column",
+          gap: "14px",
+        }}
+      >
+        <div style={{ display: "flex" }}>
+          <BotaoVoltar texto="Minigames" onClick={() => navigate("/minigames")} />
+        </div>
+        <SeletorNivel nivel={nivel()} escolher={setNivel} status={status()} />
+      </div>
+
       <Show when={erro()}>
         <div style={{ ...cartao, color: "#ff8a7a" }}>{erro()}</div>
       </Show>
@@ -453,29 +777,26 @@ function Inicio(props: { chamar: Api }) {
       <div style={cartao}>
         <TituloCartao
           icone="grid_on"
-          titulo="Palavras cruzadas do dia"
+          titulo={`Cruzada do dia · ${nomeNivel()}`}
           subtitulo={
             status()
-              ? `${dataPorExtenso(status()!.data)} · ${status()!.tamanho}x${status()!.tamanho} · a mesma pra todo mundo`
+              ? `${dataPorExtenso(status()!.data)} · ${estado()!.tamanho}x${estado()!.tamanho} · a mesma pra todo mundo`
               : "Carregando…"
           }
         />
 
-        <Show when={status()}>
+        <Show when={estado()}>
           <Show
-            when={!status()!.equipe}
+            when={!estado()!.equipe}
             fallback={
               <>
                 <p style={paragrafo}>
-                  Hoje você joga na equipe{" "}
-                  <b style={{ color: "var(--callju-accent)" }}>
-                    {status()!.equipe!.nome}
-                  </b>
-                  .
+                  Na {nomeNivel()} de hoje você joga na equipe{" "}
+                  <b style={{ color: "var(--callju-accent)" }}>{estado()!.equipe!.nome}</b>.
                 </p>
                 <button
                   class="callju-btn"
-                  onClick={() => navigate(`/minigames/sala/${status()!.equipe!.id}`)}
+                  onClick={() => navigate(`/minigames/sala/${estado()!.equipe!.id}`)}
                   style={botaoPrincipal}
                 >
                   Abrir a equipe
@@ -485,23 +806,25 @@ function Inicio(props: { chamar: Api }) {
           >
             <p style={paragrafo}>
               <Show
-                when={status()!.terminou}
+                when={estado()!.terminou}
                 fallback={
-                  status()!.iniciou
-                    ? "Você já começou a de hoje. O relógio continua correndo."
-                    : "O relógio começa quando a grade abre. Dá pra jogar sozinho ou numa equipe de até 5 pessoas, mas é um ou outro por dia. Ajuda é liberada e fica marcada no ranking."
+                  estado()!.iniciou
+                    ? `Você já começou a ${nomeNivel()} de hoje. O relógio continua correndo.`
+                    : "O relógio começa quando a grade abre. Em cada nível, dá pra jogar sozinho ou numa equipe de até 5 pessoas, mas é um ou outro por dia. Ajuda é liberada e fica marcada no ranking."
                 }
               >
-                Você terminou a de hoje em{" "}
+                Você terminou a {nomeNivel()} de hoje em{" "}
                 <b style={{ color: "var(--callju-accent)" }}>
-                  {formataTempo(status()!.tempo_ms ?? 0)}
+                  {formataTempo(estado()!.tempo_ms ?? 0)}
                 </b>
-                {status()!.ajuda ? ", usando ajuda." : ", sem ajuda nenhuma."}{" "}
-                Amanhã tem outra.
+                {estado()!.ajuda ? ", usando ajuda." : ", sem ajuda nenhuma."}{" "}
+                {nivel() === "normal" && !status()!.niveis.expert.terminou
+                  ? "Encara a Expert?"
+                  : "Amanhã tem outra."}
               </Show>
             </p>
 
-            <Show when={!status()!.terminou}>
+            <Show when={!estado()!.terminou}>
               <Show
                 when={!montandoEquipe()}
                 fallback={
@@ -517,9 +840,17 @@ function Inicio(props: { chamar: Api }) {
                       onInput={(e) => setNomeEquipe(e.currentTarget.value)}
                       ref={(el) => setTimeout(() => el.focus())}
                     />
-                    <p style={{ ...paragrafo, margin: "0", "font-size": "0.82em", opacity: "0.6" }}>
-                      Depois é só mandar o link da equipe no chat. O relógio só
-                      começa quando alguém da equipe apertar Começar.
+                    <p
+                      style={{
+                        ...paragrafo,
+                        margin: "0",
+                        "font-size": "0.82em",
+                        opacity: "0.6",
+                      }}
+                    >
+                      Equipe da {nomeNivel()} de hoje. Depois é só mandar o link no
+                      chat. O relógio só começa quando alguém da equipe apertar
+                      Começar.
                     </p>
                     <Show when={erroEquipe()}>
                       <p style={{ margin: "0", color: "#ff8a7a", "font-size": "0.88em" }}>
@@ -552,9 +883,9 @@ function Inicio(props: { chamar: Api }) {
                     onClick={() => setJogando(true)}
                     style={{ ...botaoPrincipal, flex: "1 1 180px" }}
                   >
-                    {status()!.iniciou ? "Continuar" : "Jogar sozinho"}
+                    {estado()!.iniciou ? "Continuar" : "Jogar sozinho"}
                   </button>
-                  <Show when={!status()!.iniciou}>
+                  <Show when={!estado()!.iniciou}>
                     <button
                       onClick={() => setMontandoEquipe(true)}
                       style={{
@@ -579,13 +910,13 @@ function Inicio(props: { chamar: Api }) {
         </Show>
       </div>
 
-      <PainelRanking dados={ranking()} />
+      <PainelRanking dados={ranking()?.niveis[nivel()]} nomeNivel={nomeNivel()} />
 
       {/* Cruzada em grupo, fora do ranking */}
       <div style={cartao}>
         <TituloCartao
           icone="edit_note"
-          titulo="Cruzada em grupo"
+          titulo={`Cruzada em grupo · ${nomeNivel()}`}
           subtitulo="fora do ranking · grade diferente da do dia"
         />
         <p style={paragrafo}>
@@ -593,7 +924,7 @@ function Inicio(props: { chamar: Api }) {
           as letras de cada um na hora.
         </p>
 
-        <Show when={salas()?.length}>
+        <Show when={salasDoNivel().length}>
           <div
             style={{
               display: "flex",
@@ -602,7 +933,7 @@ function Inicio(props: { chamar: Api }) {
               "margin-bottom": "14px",
             }}
           >
-            <For each={salas()!.slice(0, 6)}>
+            <For each={salasDoNivel().slice(0, 6)}>
               {(s) => (
                 <button
                   onClick={() => navigate(`/minigames/sala/${s.id}`)}
@@ -651,18 +982,70 @@ function Inicio(props: { chamar: Api }) {
   );
 }
 
-const paragrafo = {
-  margin: "16px 0",
-  "line-height": "1.55",
-  opacity: "0.8",
-  "font-size": "0.92em",
-} as const;
-
-const botaoPrincipal = {
-  width: "100%",
-  padding: "13px",
-  "font-size": "1em",
-} as const;
+function SeletorNivel(props: {
+  nivel: Nivel;
+  escolher: (n: Nivel) => void;
+  status?: Status;
+}) {
+  return (
+    <div
+      role="tablist"
+      aria-label="Nível"
+      style={{
+        display: "grid",
+        "grid-template-columns": "1fr 1fr",
+        gap: "4px",
+        padding: "4px",
+        "border-radius": "16px",
+        background: "var(--md-sys-color-surface-container-high)",
+      }}
+    >
+      <For each={NIVEIS}>
+        {(n) => {
+          const ativo = () => props.nivel === n;
+          return (
+            <button
+              role="tab"
+              aria-selected={ativo()}
+              onClick={() => props.escolher(n)}
+              style={{
+                display: "flex",
+                "flex-direction": "column",
+                "align-items": "center",
+                gap: "1px",
+                padding: "10px 8px",
+                "border-radius": "12px",
+                border: "none",
+                cursor: "pointer",
+                font: "inherit",
+                color: ativo() ? "#fff" : "var(--md-sys-color-on-surface)",
+                background: ativo() ? "var(--callju-grad)" : "transparent",
+                transition: "background 150ms ease",
+              }}
+            >
+              <span
+                style={{
+                  "font-weight": "750",
+                  display: "inline-flex",
+                  "align-items": "center",
+                  gap: "4px",
+                }}
+              >
+                {NIVEL_INFO[n].nome}
+                <Show when={props.status?.niveis[n].terminou}>
+                  <Symbol size={16}>check_circle</Symbol>
+                </Show>
+              </span>
+              <span style={{ "font-size": "0.74em", opacity: ativo() ? "0.9" : "0.55" }}>
+                {NIVEL_INFO[n].descricao}
+              </span>
+            </button>
+          );
+        }}
+      </For>
+    </div>
+  );
+}
 
 function TituloCartao(props: { icone: string; titulo: string; subtitulo: string }) {
   return (
@@ -701,7 +1084,7 @@ function TituloCartao(props: { icone: string; titulo: string; subtitulo: string 
 /* Ranking                                                             */
 /* ------------------------------------------------------------------ */
 
-function PainelRanking(props: { dados?: Ranking }) {
+function PainelRanking(props: { dados?: Ranking; nomeNivel: string }) {
   const [aba, setAba] = createSignal<"sozinho" | "equipes">("sozinho");
   const medalha = (i: number) => ["🥇", "🥈", "🥉"][i] ?? `${i + 1}º`;
 
@@ -767,7 +1150,9 @@ function PainelRanking(props: { dados?: Ranking }) {
         <Symbol size={20} color="var(--callju-accent)">
           leaderboard
         </Symbol>
-        <span style={{ "font-weight": "700", flex: "1" }}>Ranking de hoje</span>
+        <span style={{ "font-weight": "700", flex: "1" }}>
+          Ranking de hoje · {props.nomeNivel}
+        </span>
         <div
           role="tablist"
           style={{
@@ -1406,15 +1791,41 @@ function Relogio(props: { texto: string; terminou: boolean }) {
   );
 }
 
-function BotaoVoltar(props: { onClick: () => void }) {
+function BotaoVoltar(props: { texto: string; onClick: () => void }) {
   return (
     <button
       onClick={props.onClick}
       style={{ ...botaoSecundario, display: "flex", "align-items": "center", gap: "4px" }}
     >
       <Symbol size={18}>arrow_back</Symbol>
-      Minigames
+      {props.texto}
     </button>
+  );
+}
+
+function CartaoFinal(props: { titulo: string; texto: string; acao: string; aoClicar: () => void }) {
+  return (
+    <div
+      style={{
+        ...cartao,
+        "max-width": "none",
+        "text-align": "center",
+        border: "1px solid var(--callju-accent-line)",
+        background: "var(--callju-accent-soft)",
+      }}
+    >
+      <div style={{ "font-size": "1.2em", "font-weight": "750" }}>{props.titulo}</div>
+      <div style={{ opacity: "0.7", "margin-top": "4px", "font-size": "0.92em" }}>
+        {props.texto}
+      </div>
+      <button
+        class="callju-btn"
+        onClick={props.aoClicar}
+        style={{ "margin-top": "14px", padding: "10px 22px" }}
+      >
+        {props.acao}
+      </button>
+    </div>
   );
 }
 
@@ -1422,7 +1833,7 @@ function BotaoVoltar(props: { onClick: () => void }) {
 /* Cruzada do dia sozinho                                              */
 /* ------------------------------------------------------------------ */
 
-type RespostaHoje = Estado & { agora_ms: number; grade: Grade };
+type RespostaHoje = Estado & { data: string; agora_ms: number; grade: Grade };
 
 type RespostaAjuda = Estado & {
   erradas?: Casa[];
@@ -1430,11 +1841,15 @@ type RespostaAjuda = Estado & {
 };
 
 function Cruzada(props: {
+  nivel: Nivel;
   chamar: Api;
   aoTerminar: () => void;
   voltar: () => void;
   irParaEquipe: (id: string) => void;
 }) {
+  // O nivel nao muda durante a partida: guardado uma vez so
+  const nivel = props.nivel;
+
   const [grade, setGrade] = createSignal<Grade>();
   const [data, setData] = createSignal("");
   const [letras, setLetras] = createSignal<string[][]>([]);
@@ -1451,9 +1866,11 @@ function Cruzada(props: {
   const relogio = setInterval(() => setAgora(Date.now()), 250);
   onCleanup(() => clearInterval(relogio));
 
+  const chaveLocal = (d: string) => `callju-cruzada-${nivel}-${d}`;
+
   function guardar() {
     try {
-      localStorage.setItem(`callju-cruzada-${data()}`, JSON.stringify(letras()));
+      localStorage.setItem(chaveLocal(data()), JSON.stringify(letras()));
     } catch {
       // Sem armazenamento local, so perde o progresso ao recarregar
     }
@@ -1461,12 +1878,12 @@ function Cruzada(props: {
 
   onMount(async () => {
     try {
-      const r = await props.chamar<RespostaHoje>("/cruzada/hoje");
+      const r = await props.chamar<RespostaHoje>(`/cruzada/hoje?nivel=${nivel}`);
       const n = r.grade.tamanho;
 
       let salvas: string[][] | null = null;
       try {
-        salvas = JSON.parse(localStorage.getItem(`callju-cruzada-${r.data}`) ?? "null");
+        salvas = JSON.parse(localStorage.getItem(chaveLocal(r.data)) ?? "null");
       } catch {
         salvas = null;
       }
@@ -1484,7 +1901,8 @@ function Cruzada(props: {
       );
       setGrade(r.grade);
     } catch (err) {
-      const equipe = err instanceof ErroApi ? (err.dados.equipe as { id: string } | undefined) : undefined;
+      const equipe =
+        err instanceof ErroApi ? (err.dados.equipe as { id: string } | undefined) : undefined;
       if (equipe) props.irParaEquipe(equipe.id);
       else setAviso("Não consegui abrir a grade de hoje. Volta e tenta de novo.");
     }
@@ -1519,6 +1937,7 @@ function Cruzada(props: {
     setEnviando(true);
     try {
       const r = await props.chamar<Estado & { certa: boolean }>("/cruzada/enviar", {
+        nivel,
         letras: letras(),
       });
       if (r.certa) {
@@ -1538,6 +1957,7 @@ function Cruzada(props: {
   async function pedirAjuda(tipo: TipoAjuda, corpo: Record<string, unknown>) {
     try {
       const resp = await props.chamar<RespostaAjuda>("/cruzada/ajuda", {
+        nivel,
         tipo,
         letras: letras(),
         ...corpo,
@@ -1576,7 +1996,8 @@ function Cruzada(props: {
   return (
     <div style={colunaDoJogo}>
       <div style={{ display: "flex", "align-items": "center", gap: "12px" }}>
-        <BotaoVoltar onClick={props.voltar} />
+        <BotaoVoltar texto="Palavras cruzadas" onClick={props.voltar} />
+        <span style={{ ...selo, "font-weight": "700" }}>{NIVEL_INFO[nivel].nome}</span>
         <div style={{ flex: "1" }} />
         <Show when={ajuda()}>
           <span title="Usar ajuda fica marcado no ranking" style={selo}>
@@ -1588,7 +2009,7 @@ function Cruzada(props: {
 
       <Show when={terminou() !== undefined}>
         <CartaoFinal
-          titulo={`Terminou em ${formataTempo(terminou()!)}!`}
+          titulo={`Terminou a ${NIVEL_INFO[nivel].nome} em ${formataTempo(terminou()!)}!`}
           texto={ajuda() ? "Com ajuda, fica o selo no ranking." : "Sem ajuda nenhuma. Bonito."}
           acao="Ver o ranking"
           aoClicar={props.voltar}
@@ -1612,32 +2033,6 @@ function Cruzada(props: {
           ajuda={pedirAjuda}
         />
       </Show>
-    </div>
-  );
-}
-
-function CartaoFinal(props: { titulo: string; texto: string; acao: string; aoClicar: () => void }) {
-  return (
-    <div
-      style={{
-        ...cartao,
-        "max-width": "none",
-        "text-align": "center",
-        border: "1px solid var(--callju-accent-line)",
-        background: "var(--callju-accent-soft)",
-      }}
-    >
-      <div style={{ "font-size": "1.2em", "font-weight": "750" }}>{props.titulo}</div>
-      <div style={{ opacity: "0.7", "margin-top": "4px", "font-size": "0.92em" }}>
-        {props.texto}
-      </div>
-      <button
-        class="callju-btn"
-        onClick={props.aoClicar}
-        style={{ "margin-top": "14px", padding: "10px 22px" }}
-      >
-        {props.acao}
-      </button>
     </div>
   );
 }
@@ -1673,9 +2068,16 @@ function SalaEmGrupo(props: { id: string; chamar: Api; voltar: () => void }) {
   /* ---- Letras digitadas aqui que o servidor ainda nao confirmou ---- */
   const pendentes = new Map<string, { letra: string; t: number }>();
 
+  let nivelGuardado = false;
+
   function receber(f: FotoSala) {
     setDesvio(f.agora_ms - Date.now());
     setFoto(f);
+    // Voltando da sala, a tela das cruzadas abre no nivel dela
+    if (!nivelGuardado) {
+      nivelGuardado = true;
+      salvarNivel(f.sala.nivel);
+    }
     if (!f.letras) return;
 
     // A foto pode ter saido antes da ultima letra digitada chegar la. Por
@@ -1816,6 +2218,7 @@ function SalaEmGrupo(props: { id: string; chamar: Api; voltar: () => void }) {
   const reveladas = createMemo(
     () => new Set((foto()?.reveladas ?? []).map(([a, b]) => chave(a, b))),
   );
+  const nomeNivel = () => (sala() ? NIVEL_INFO[sala()!.nivel].nome : "");
 
   const tempoNaTela = () => {
     const s = sala();
@@ -1841,7 +2244,7 @@ function SalaEmGrupo(props: { id: string; chamar: Api; voltar: () => void }) {
   return (
     <div style={colunaDoJogo}>
       <div style={{ display: "flex", "align-items": "center", gap: "12px", "flex-wrap": "wrap" }}>
-        <BotaoVoltar onClick={props.voltar} />
+        <BotaoVoltar texto="Palavras cruzadas" onClick={props.voltar} />
         <div style={{ flex: "1", "min-width": "0" }}>
           <Show when={sala()}>
             <div
@@ -1855,7 +2258,9 @@ function SalaEmGrupo(props: { id: string; chamar: Api; voltar: () => void }) {
               {sala()!.tipo === "equipe" ? `Equipe ${sala()!.nome}` : sala()!.nome}
             </div>
             <div style={{ "font-size": "0.78em", opacity: "0.55" }}>
-              {sala()!.tipo === "equipe" ? "cruzada do dia · vale ranking" : "em grupo · fora do ranking"}
+              {sala()!.tipo === "equipe"
+                ? `cruzada do dia · ${nomeNivel()} · vale ranking`
+                : `em grupo · ${nomeNivel()} · fora do ranking`}
             </div>
           </Show>
         </div>
@@ -1874,7 +2279,7 @@ function SalaEmGrupo(props: { id: string; chamar: Api; voltar: () => void }) {
         <CartaoFinal
           titulo="Não deu pra entrar"
           texto={erroFatal()}
-          acao="Voltar pros minigames"
+          acao="Voltar pras palavras cruzadas"
           aoClicar={props.voltar}
         />
       </Show>
@@ -1937,12 +2342,12 @@ function SalaEmGrupo(props: { id: string; chamar: Api; voltar: () => void }) {
             <TituloCartao
               icone="groups"
               titulo={`Equipe ${sala()!.nome}`}
-              subtitulo={`${pessoas().length} de ${sala()!.vagas ?? 5} pessoas`}
+              subtitulo={`${nomeNivel()} de hoje · ${pessoas().length} de ${sala()!.vagas ?? 5} pessoas`}
             />
             <p style={paragrafo}>
               Manda o link no chat pra chamar a galera. A grade só aparece e o
               relógio só começa quando alguém apertar Começar. Quem entra na
-              equipe não joga a de hoje sozinho.
+              equipe não joga a {nomeNivel()} de hoje sozinho.
             </p>
             <input
               readOnly
@@ -1971,11 +2376,11 @@ function SalaEmGrupo(props: { id: string; chamar: Api; voltar: () => void }) {
             texto={
               sala()!.tipo === "equipe"
                 ? sala()!.ajuda
-                  ? "Entrou no ranking de equipes, com o selo de ajuda."
-                  : "Entrou no ranking de equipes, sem ajuda nenhuma."
+                  ? `Entrou no ranking de equipes da ${nomeNivel()}, com o selo de ajuda.`
+                  : `Entrou no ranking de equipes da ${nomeNivel()}, sem ajuda nenhuma.`
                 : "Grade fechada em grupo."
             }
-            acao={sala()!.tipo === "equipe" ? "Ver o ranking" : "Voltar pros minigames"}
+            acao={sala()!.tipo === "equipe" ? "Ver o ranking" : "Voltar pras palavras cruzadas"}
             aoClicar={props.voltar}
           />
         </Show>
