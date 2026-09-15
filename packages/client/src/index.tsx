@@ -48,6 +48,7 @@ import { DevelopmentPage } from "./interface/Development";
 import { Discover } from "./interface/Discover";
 import { Friends } from "./interface/Friends";
 import { HomePage } from "./interface/Home";
+import { MinigamesPage } from "./interface/Minigames";
 import { ServerHome } from "./interface/ServerHome";
 import { ChannelPage } from "./interface/channels/ChannelPage";
 import "./serviceWorkerInterface";
@@ -165,6 +166,7 @@ const routes = () => (
       <Route path="/invite/:code" component={InviteRedirect} />
       <Route path="/bot/:code" component={BotRedirect} />
       <Route path="/friends" component={Friends} />
+      <Route path="/minigames" component={MinigamesPage} />
       <Route path="/server/:server/*">
         <Route path="/channel/:channel/*" component={ChannelPage} />
         <Route path="/*" component={ServerHome} />

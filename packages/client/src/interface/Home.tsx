@@ -460,12 +460,6 @@ export function HomePage() {
             }
           />
           <CartaoAcao
-            emoji="⚙️"
-            titulo="Configurações"
-            texto="Microfone, câmera, tema e notificações"
-            onClick={() => openModal({ type: "settings", config: "user" })}
-          />
-          <CartaoAcao
             emoji="📖"
             titulo="Como usar o Callju"
             texto="Primeira vez aqui? Começa por aqui"

@@ -23,6 +23,7 @@ import MdSettings from "@material-design-icons/svg/filled/settings.svg?component
 import { Tooltip } from "../../../../components/ui/components/floating";
 import { Draggable } from "../../../../components/ui/components/utils/Draggable";
 import { UserMenu } from "./UserMenu";
+import { Symbol } from "@revolt/ui/components/utils/Symbol";
 
 interface Props {
   /**
@@ -168,6 +169,21 @@ export const ServerList = (props: Props) => {
             />
           </a>
           <UserMenu anchor={menuButton} />
+        </Tooltip>
+        {/* Minigames, logo abaixo do botao do menu. Fica fixo aqui, e nao
+            dentro da lista de servidores, para ninguem precisar procurar. */}
+        <Tooltip placement="right" content="Minigames" aria="Minigames">
+          <a class={entryContainer()} href="/minigames">
+            <Avatar
+              size={42}
+              fallback={
+                <Symbol size={24} color="var(--callju-accent)">
+                  sports_esports
+                </Symbol>
+              }
+              interactive
+            />
+          </a>
         </Tooltip>
         <For each={props.unreadConversations.slice(0, 9)}>
           {(conversation) => (
