@@ -56,6 +56,8 @@ type Estado = {
   inicio_ms?: number;
   tempo_ms?: number | null;
   ajuda: boolean;
+  grau_ajuda: number;
+  ajudas: RegistroAjuda[];
   equipe: { id: string; nome: string } | null;
 };
 
@@ -66,6 +68,8 @@ type LinhaRanking = {
   nome: string;
   tempo_ms: number;
   ajuda: boolean;
+  grau_ajuda: number;
+  ajudas: RegistroAjuda[];
   eu: boolean;
 };
 
@@ -77,6 +81,8 @@ type LinhaEquipe = {
   membros: Membro[];
   tempo_ms: number;
   ajuda: boolean;
+  grau_ajuda: number;
+  ajudas: RegistroAjuda[];
   eu: boolean;
 };
 
@@ -122,6 +128,8 @@ type FotoSala = {
     tempo_ms: number | null;
     cheia_errada: boolean;
     ajuda: boolean;
+    ajudas: RegistroAjuda[];
+    grau_ajuda: number;
     vagas: number | null;
   };
   grade: Grade | null;
@@ -138,6 +146,20 @@ type TipoAjuda =
   | "checar_grade"
   | "revelar_letra"
   | "revelar_palavra";
+
+/** Cada ajuda usada: qual, em que momento da partida e, na sala, quem */
+type RegistroAjuda = { tipo: TipoAjuda; t_ms: number; quem?: string };
+
+/* Checar e revelar sao familias diferentes: cor e icone proprios */
+const COR_CHECAR = "#6cc6f0";
+const COR_REVELAR = "#f2c14e";
+
+const INFO_AJUDA: Record<TipoAjuda, { familia: "checar" | "revelar"; acao: string }> = {
+  checar_palavra: { familia: "checar", acao: "checou uma palavra" },
+  checar_grade: { familia: "checar", acao: "checou a grade" },
+  revelar_letra: { familia: "revelar", acao: "revelou uma letra" },
+  revelar_palavra: { familia: "revelar", acao: "revelou uma palavra" },
+};
 
 /* ------------------------------------------------------------------ */
 /* Utilidades                                                          */
@@ -205,6 +227,13 @@ const botaoSecundario = {
   color: "var(--md-sys-color-on-surface)",
   background: "var(--md-sys-color-surface-container-high)",
   border: "1px solid var(--md-sys-color-outline-variant)",
+} as const;
+
+const botaoRevelar = {
+  ...botaoSecundario,
+  color: "#f2c14e",
+  background: "rgba(242, 193, 78, 0.07)",
+  border: "1px dashed rgba(242, 193, 78, 0.45)",
 } as const;
 
 const campoTexto = {
@@ -468,6 +497,246 @@ function IconeCruzada(props: { tamanho: number }) {
         }}
       </For>
     </svg>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Selo e linha do tempo das ajudas                                    */
+/* ------------------------------------------------------------------ */
+
+function contarAjudas(ajudas: RegistroAjuda[]) {
+  let checou = 0;
+  let revelou = 0;
+  for (const a of ajudas) {
+    if (INFO_AJUDA[a.tipo]?.familia === "checar") checou++;
+    else if (INFO_AJUDA[a.tipo]?.familia === "revelar") revelou++;
+  }
+  return { checou, revelou };
+}
+
+/** "2 checagens e 1 revelação", ou "ajuda" pra partida sem registro detalhado */
+function descreverAjudas(ajudas: RegistroAjuda[], grau: number) {
+  const { checou, revelou } = contarAjudas(ajudas);
+  const partes: string[] = [];
+  if (checou) partes.push(`${checou} ${checou === 1 ? "checagem" : "checagens"}`);
+  if (revelou) partes.push(`${revelou} ${revelou === 1 ? "revelação" : "revelações"}`);
+  if (!partes.length && grau > 0) return "ajuda";
+  return partes.join(" e ");
+}
+
+function resumoFinal(ajudas: RegistroAjuda[], grau: number) {
+  return grau > 0
+    ? `Com ${descreverAjudas(ajudas, grau)}, fica marcado no ranking.`
+    : "Sem ajuda nenhuma. Bonito.";
+}
+
+function textoDaAjuda(a: RegistroAjuda) {
+  const acao = INFO_AJUDA[a.tipo]?.acao ?? "usou ajuda";
+  return a.quem ? `${a.quem} ${acao}` : acao.charAt(0).toUpperCase() + acao.slice(1);
+}
+
+/**
+ * Selo com quantas vezes checou e revelou. Com `alternar`, vira botao que
+ * abre a linha do tempo.
+ */
+function SeloAjudas(props: {
+  ajudas: RegistroAjuda[];
+  grau: number;
+  aberto?: boolean;
+  alternar?: () => void;
+}) {
+  const conta = () => contarAjudas(props.ajudas ?? []);
+  const titulo = () =>
+    `Usou ${descreverAjudas(props.ajudas ?? [], props.grau)}${props.alternar ? ". Toca pra ver quando." : ""}`;
+
+  const estilo = {
+    display: "inline-flex",
+    "align-items": "center",
+    gap: "7px",
+    padding: "3px 9px",
+    "border-radius": "99px",
+    border: "1px solid var(--md-sys-color-outline-variant)",
+    background: "var(--md-sys-color-surface-container)",
+    color: "var(--md-sys-color-on-surface)",
+    "font-family": "inherit",
+    "font-size": "0.76em",
+    "font-weight": "700",
+    "font-variant-numeric": "tabular-nums",
+    "white-space": "nowrap",
+  } as const;
+
+  const conteudo = () => (
+    <>
+      <Show when={conta().checou}>
+        <span style={{ display: "inline-flex", "align-items": "center", gap: "2px", color: COR_CHECAR }}>
+          <Symbol size={15} color={COR_CHECAR}>
+            fact_check
+          </Symbol>
+          {conta().checou}
+        </span>
+      </Show>
+      <Show when={conta().revelou}>
+        <span style={{ display: "inline-flex", "align-items": "center", gap: "2px", color: COR_REVELAR }}>
+          <Symbol size={15} color={COR_REVELAR}>
+            lightbulb
+          </Symbol>
+          {conta().revelou}
+        </span>
+      </Show>
+      <Show when={!conta().checou && !conta().revelou}>
+        <span style={{ opacity: "0.8" }}>ajuda</span>
+      </Show>
+      <Show when={props.alternar}>
+        <span style={{ display: "inline-flex", opacity: "0.55", "margin-left": "-3px" }}>
+          <Symbol size={15}>{props.aberto ? "expand_less" : "expand_more"}</Symbol>
+        </span>
+      </Show>
+    </>
+  );
+
+  return (
+    <Show when={props.grau > 0}>
+      <Show
+        when={props.alternar}
+        fallback={
+          <span title={titulo()} style={estilo}>
+            {conteudo()}
+          </span>
+        }
+      >
+        <button
+          type="button"
+          title={titulo()}
+          aria-expanded={props.aberto}
+          onClick={() => props.alternar!()}
+          style={{ ...estilo, cursor: "pointer" }}
+        >
+          {conteudo()}
+        </button>
+      </Show>
+    </Show>
+  );
+}
+
+/** Quando cada ajuda aconteceu, numa barra do tempo da partida e em lista */
+function LinhaDoTempoAjudas(props: { ajudas: RegistroAjuda[]; tempo_ms: number; recuo?: string }) {
+  const total = () => Math.max(props.tempo_ms, 1, ...props.ajudas.map((a) => a.t_ms));
+  const cor = (a: RegistroAjuda) =>
+    INFO_AJUDA[a.tipo]?.familia === "revelar" ? COR_REVELAR : COR_CHECAR;
+  const icone = (a: RegistroAjuda) =>
+    INFO_AJUDA[a.tipo]?.familia === "revelar" ? "lightbulb" : "fact_check";
+
+  return (
+    <div
+      style={{
+        padding: `2px 12px 12px ${props.recuo ?? "12px"}`,
+        display: "flex",
+        "flex-direction": "column",
+        gap: "6px",
+      }}
+    >
+      <Show
+        when={props.ajudas.length}
+        fallback={
+          <span style={{ "font-size": "0.8em", opacity: "0.55" }}>
+            Essa ajuda é de antes do registro detalhado, então não dá pra saber
+            qual foi nem quando.
+          </span>
+        }
+      >
+        <div
+          style={{
+            position: "relative",
+            height: "6px",
+            margin: "10px 5px 0",
+            "border-radius": "99px",
+            background: "var(--md-sys-color-surface-variant)",
+          }}
+        >
+          <For each={props.ajudas}>
+            {(a) => (
+              <span
+                title={`${formataTempo(a.t_ms)} · ${textoDaAjuda(a)}`}
+                style={{
+                  position: "absolute",
+                  top: "50%",
+                  left: `${Math.min(100, (a.t_ms / total()) * 100)}%`,
+                  width: "11px",
+                  height: "11px",
+                  transform: "translate(-50%, -50%)",
+                  "border-radius": "50%",
+                  background: cor(a),
+                  "box-shadow": "0 0 0 2px var(--md-sys-color-surface-container-high)",
+                }}
+              />
+            )}
+          </For>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            "justify-content": "space-between",
+            "font-size": "0.7em",
+            opacity: "0.45",
+            "font-variant-numeric": "tabular-nums",
+            margin: "0 0 2px",
+          }}
+        >
+          <span>0:00</span>
+          <span>{formataTempo(props.tempo_ms)}</span>
+        </div>
+        <For each={props.ajudas}>
+          {(a) => (
+            <div style={{ display: "flex", "align-items": "center", gap: "8px", "font-size": "0.82em" }}>
+              <span
+                style={{
+                  "min-width": "40px",
+                  opacity: "0.55",
+                  "font-variant-numeric": "tabular-nums",
+                }}
+              >
+                {formataTempo(a.t_ms)}
+              </span>
+              <Symbol size={15} color={cor(a)}>
+                {icone(a)}
+              </Symbol>
+              <span>{textoDaAjuda(a)}</span>
+            </div>
+          )}
+        </For>
+      </Show>
+    </div>
+  );
+}
+
+function LegendaAjudas() {
+  const item = { display: "inline-flex", "align-items": "center", gap: "3px" } as const;
+  return (
+    <p
+      style={{
+        margin: "12px 0 0",
+        "font-size": "0.76em",
+        opacity: "0.6",
+        display: "flex",
+        "flex-wrap": "wrap",
+        gap: "4px 12px",
+        "align-items": "center",
+      }}
+    >
+      <span style={item}>
+        <Symbol size={14} color={COR_CHECAR}>
+          fact_check
+        </Symbol>
+        checou
+      </span>
+      <span style={item}>
+        <Symbol size={14} color={COR_REVELAR}>
+          lightbulb
+        </Symbol>
+        revelou
+      </span>
+      <span>Ordem: sem ajuda, depois só checou, depois revelou. Toca no selo pra ver quando.</span>
+    </p>
   );
 }
 
@@ -817,7 +1086,9 @@ function Cruzadas(props: { chamar: Api }) {
                 <b style={{ color: "var(--callju-accent)" }}>
                   {formataTempo(estado()!.tempo_ms ?? 0)}
                 </b>
-                {estado()!.ajuda ? ", usando ajuda." : ", sem ajuda nenhuma."}{" "}
+                {estado()!.grau_ajuda
+                  ? `, com ${descreverAjudas(estado()!.ajudas, estado()!.grau_ajuda)}.`
+                  : ", sem ajuda nenhuma."}{" "}
                 {nivel() === "normal" && !status()!.niveis.expert.terminou
                   ? "Encara a Expert?"
                   : "Amanhã tem outra."}
@@ -1197,24 +1468,33 @@ function PainelRanking(props: { dados?: Ranking; nomeNivel: string }) {
           >
             <div style={{ display: "flex", "flex-direction": "column", gap: "4px" }}>
               <For each={props.dados!.terminaram}>
-                {(l, i) => (
-                  <div style={linha(l.eu)}>
-                    <span style={{ width: "26px", "text-align": "center" }}>
-                      {medalha(i())}
-                    </span>
-                    <Foto id={l.id} nome={l.nome} tamanho={28} />
-                    <span style={nome(l.eu)}>
-                      {l.nome}
-                      {l.eu ? " (você)" : ""}
-                    </span>
-                    <Show when={l.ajuda}>
-                      <span title="Usou alguma ajuda nesta grade" style={selo}>
-                        ajuda
-                      </span>
-                    </Show>
-                    <span style={tempo}>{formataTempo(l.tempo_ms)}</span>
-                  </div>
-                )}
+                {(l, i) => {
+                  const [aberto, setAberto] = createSignal(false);
+                  return (
+                    <div>
+                      <div style={linha(l.eu)}>
+                        <span style={{ width: "26px", "text-align": "center" }}>
+                          {medalha(i())}
+                        </span>
+                        <Foto id={l.id} nome={l.nome} tamanho={28} />
+                        <span style={nome(l.eu)}>
+                          {l.nome}
+                          {l.eu ? " (você)" : ""}
+                        </span>
+                        <SeloAjudas
+                          ajudas={l.ajudas ?? []}
+                          grau={l.grau_ajuda ?? (l.ajuda ? 2 : 0)}
+                          aberto={aberto()}
+                          alternar={() => setAberto(!aberto())}
+                        />
+                        <span style={tempo}>{formataTempo(l.tempo_ms)}</span>
+                      </div>
+                      <Show when={aberto()}>
+                        <LinhaDoTempoAjudas ajudas={l.ajudas ?? []} tempo_ms={l.tempo_ms} recuo="50px" />
+                      </Show>
+                    </div>
+                  );
+                }}
               </For>
             </div>
           </Show>
@@ -1239,38 +1519,47 @@ function PainelRanking(props: { dados?: Ranking; nomeNivel: string }) {
           >
             <div style={{ display: "flex", "flex-direction": "column", gap: "4px" }}>
               <For each={props.dados!.equipes}>
-                {(eq, i) => (
-                  <div style={linha(eq.eu)}>
-                    <span style={{ width: "26px", "text-align": "center" }}>
-                      {medalha(i())}
-                    </span>
-                    <span style={{ flex: "1", "min-width": "0" }}>
-                      <span style={{ ...nome(eq.eu), display: "block" }}>
-                        {eq.nome}
-                        {eq.eu ? " (sua)" : ""}
-                      </span>
-                      <span
-                        style={{
-                          display: "block",
-                          "font-size": "0.76em",
-                          opacity: "0.55",
-                          overflow: "hidden",
-                          "text-overflow": "ellipsis",
-                          "white-space": "nowrap",
-                        }}
-                      >
-                        {eq.membros.map((m) => m.nome).join(", ")}
-                      </span>
-                    </span>
-                    <Pilha membros={eq.membros} tamanho={26} />
-                    <Show when={eq.ajuda}>
-                      <span title="A equipe usou alguma ajuda" style={selo}>
-                        ajuda
-                      </span>
-                    </Show>
-                    <span style={tempo}>{formataTempo(eq.tempo_ms)}</span>
-                  </div>
-                )}
+                {(eq, i) => {
+                  const [aberto, setAberto] = createSignal(false);
+                  return (
+                    <div>
+                      <div style={linha(eq.eu)}>
+                        <span style={{ width: "26px", "text-align": "center" }}>
+                          {medalha(i())}
+                        </span>
+                        <span style={{ flex: "1", "min-width": "0" }}>
+                          <span style={{ ...nome(eq.eu), display: "block" }}>
+                            {eq.nome}
+                            {eq.eu ? " (sua)" : ""}
+                          </span>
+                          <span
+                            style={{
+                              display: "block",
+                              "font-size": "0.76em",
+                              opacity: "0.55",
+                              overflow: "hidden",
+                              "text-overflow": "ellipsis",
+                              "white-space": "nowrap",
+                            }}
+                          >
+                            {eq.membros.map((m) => m.nome).join(", ")}
+                          </span>
+                        </span>
+                        <Pilha membros={eq.membros} tamanho={26} />
+                        <SeloAjudas
+                          ajudas={eq.ajudas ?? []}
+                          grau={eq.grau_ajuda ?? (eq.ajuda ? 2 : 0)}
+                          aberto={aberto()}
+                          alternar={() => setAberto(!aberto())}
+                        />
+                        <span style={tempo}>{formataTempo(eq.tempo_ms)}</span>
+                      </div>
+                      <Show when={aberto()}>
+                        <LinhaDoTempoAjudas ajudas={eq.ajudas ?? []} tempo_ms={eq.tempo_ms} recuo="50px" />
+                      </Show>
+                    </div>
+                  );
+                }}
               </For>
             </div>
           </Show>
@@ -1282,6 +1571,14 @@ function PainelRanking(props: { dados?: Ranking; nomeNivel: string }) {
                 : `${props.dados!.equipes_jogando} equipes jogando agora`}
             </p>
           </Show>
+        </Show>
+
+        <Show
+          when={[...props.dados!.terminaram, ...props.dados!.equipes].some(
+            (x) => (x.grau_ajuda ?? (x.ajuda ? 2 : 0)) > 0,
+          )}
+        >
+          <LegendaAjudas />
         </Show>
       </Show>
     </div>
@@ -1410,10 +1707,39 @@ function Tabuleiro(props: {
     escolherDica(lista[(i + passo + lista.length) % lista.length]);
   }
 
+  const [avisoLocal, setAvisoLocal] = createSignal("");
+
+  const vazias = createMemo(() =>
+    props.grade.abertas.reduce(
+      (total, linha, r) => total + linha.filter((ab, c) => ab && !props.letras[r]?.[c]).length,
+      0,
+    ),
+  );
+
   function gravar(r: number, c: number, letra: string, cursor: Casa) {
     // Letra revelada ja e a certa: fica travada
     if (props.reveladas.has(chave(r, c))) return;
+    setAvisoLocal("");
     props.escrever(r, c, letra, cursor, dir());
+  }
+
+  /**
+   * Finalizei, checar: so confere a grade cheia. Com casa vazia, avisa quantas
+   * faltam sem gastar checagem.
+   */
+  function finalizar() {
+    const faltam = vazias();
+    if (faltam > 0) {
+      setAvisoLocal(
+        faltam === 1
+          ? "Ainda falta 1 casa pra finalizar."
+          : `Ainda faltam ${faltam} casas pra finalizar.`,
+      );
+    } else {
+      setAvisoLocal("");
+      props.ajuda("checar_grade", {});
+    }
+    entrada?.focus();
   }
 
   function digitar(letra: string) {
@@ -1648,7 +1974,7 @@ function Tabuleiro(props: {
             </For>
           </div>
 
-          <Show when={props.aviso}>
+          <Show when={props.aviso || avisoLocal()}>
             <p
               style={{
                 margin: "10px 0 0",
@@ -1657,7 +1983,7 @@ function Tabuleiro(props: {
                 opacity: "0.85",
               }}
             >
-              {props.aviso}
+              {props.aviso || avisoLocal()}
             </p>
           </Show>
 
@@ -1665,24 +1991,79 @@ function Tabuleiro(props: {
             <div
               style={{
                 display: "flex",
-                "flex-wrap": "wrap",
-                gap: "6px",
-                "justify-content": "center",
-                "margin-top": "12px",
+                "flex-direction": "column",
+                "align-items": "center",
+                gap: "10px",
+                "margin-top": "14px",
               }}
             >
-              <button style={botaoSecundario} onClick={() => pedirAjuda("checar_palavra")}>
-                Checar palavra
-              </button>
-              <button style={botaoSecundario} onClick={() => pedirAjuda("checar_grade")}>
-                Checar tudo
-              </button>
-              <button style={botaoSecundario} onClick={() => pedirAjuda("revelar_letra")}>
-                Revelar letra
-              </button>
-              <button style={botaoSecundario} onClick={() => pedirAjuda("revelar_palavra")}>
-                Revelar palavra
-              </button>
+              {/* Checar: conferir o que ja foi escrito */}
+              <div
+                style={{
+                  display: "flex",
+                  "flex-wrap": "wrap",
+                  gap: "6px",
+                  "justify-content": "center",
+                }}
+              >
+                <button
+                  class="callju-btn"
+                  onClick={finalizar}
+                  style={{
+                    display: "flex",
+                    "align-items": "center",
+                    gap: "6px",
+                    padding: "9px 16px",
+                    "font-size": "0.9em",
+                  }}
+                >
+                  <Symbol size={18}>task_alt</Symbol>
+                  Finalizei, checar
+                </button>
+                <button
+                  onClick={() => pedirAjuda("checar_palavra")}
+                  style={{ ...botaoSecundario, display: "flex", "align-items": "center", gap: "5px" }}
+                >
+                  <Symbol size={16} color={COR_CHECAR}>
+                    fact_check
+                  </Symbol>
+                  Checar palavra
+                </button>
+              </div>
+
+              {/* Ajuda: entregar resposta */}
+              <div
+                style={{
+                  display: "flex",
+                  "flex-wrap": "wrap",
+                  gap: "6px",
+                  "justify-content": "center",
+                  "align-items": "center",
+                }}
+              >
+                <span
+                  style={{
+                    display: "inline-flex",
+                    "align-items": "center",
+                    gap: "3px",
+                    "font-size": "0.7em",
+                    "text-transform": "uppercase",
+                    "letter-spacing": "0.12em",
+                    color: COR_REVELAR,
+                  }}
+                >
+                  <Symbol size={14} color={COR_REVELAR}>
+                    lightbulb
+                  </Symbol>
+                  Ajuda
+                </span>
+                <button style={botaoRevelar} onClick={() => pedirAjuda("revelar_letra")}>
+                  Revelar letra
+                </button>
+                <button style={botaoRevelar} onClick={() => pedirAjuda("revelar_palavra")}>
+                  Revelar palavra
+                </button>
+              </div>
             </div>
             <p
               style={{
@@ -1855,7 +2236,13 @@ function Cruzada(props: {
   const [letras, setLetras] = createSignal<string[][]>([]);
   const [erradas, setErradas] = createSignal<Set<string>>(new Set());
   const [reveladas, setReveladas] = createSignal<Set<string>>(new Set());
-  const [ajuda, setAjuda] = createSignal(false);
+  const [ajudas, setAjudas] = createSignal<RegistroAjuda[]>([]);
+  const [grau, setGrau] = createSignal(0);
+
+  function aplicarAjudas(e: Estado) {
+    setAjudas(e.ajudas ?? []);
+    setGrau(e.grau_ajuda ?? (e.ajuda ? 2 : 0));
+  }
   const [inicio, setInicio] = createSignal(0);
   const [desvio, setDesvio] = createSignal(0);
   const [agora, setAgora] = createSignal(Date.now());
@@ -1889,7 +2276,7 @@ function Cruzada(props: {
       }
 
       setData(r.data);
-      setAjuda(r.ajuda);
+      aplicarAjudas(r);
       setInicio(r.inicio_ms ?? Date.now());
       // O relogio do servidor manda: o desvio corrige o do computador
       setDesvio(r.agora_ms - Date.now());
@@ -1942,10 +2329,10 @@ function Cruzada(props: {
       });
       if (r.certa) {
         setTerminou(r.tempo_ms ?? 0);
-        setAjuda(r.ajuda);
+        aplicarAjudas(r);
         props.aoTerminar();
       } else {
-        setAviso("A grade está cheia, mas tem letra errada em algum lugar.");
+        setAviso("A grade está cheia, mas tem letra errada. Aperta Finalizei, checar pra ver onde.");
       }
     } catch {
       setAviso("Não consegui enviar. Confere a conexão e digita de novo.");
@@ -1956,13 +2343,27 @@ function Cruzada(props: {
 
   async function pedirAjuda(tipo: TipoAjuda, corpo: Record<string, unknown>) {
     try {
+      // Finalizei, checar com a grade ja certa: termina sem contar checagem
+      if (tipo === "checar_grade") {
+        const envio = await props.chamar<Estado & { certa: boolean }>("/cruzada/enviar", {
+          nivel,
+          letras: letras(),
+        });
+        if (envio.certa) {
+          setTerminou(envio.tempo_ms ?? 0);
+          aplicarAjudas(envio);
+          props.aoTerminar();
+          return;
+        }
+      }
+
       const resp = await props.chamar<RespostaAjuda>("/cruzada/ajuda", {
         nivel,
         tipo,
         letras: letras(),
         ...corpo,
       });
-      setAjuda(true);
+      aplicarAjudas(resp);
 
       if (resp.erradas) {
         setErradas(new Set(resp.erradas.map(([a, b]) => chave(a, b))));
@@ -1999,18 +2400,14 @@ function Cruzada(props: {
         <BotaoVoltar texto="Palavras cruzadas" onClick={props.voltar} />
         <span style={{ ...selo, "font-weight": "700" }}>{NIVEL_INFO[nivel].nome}</span>
         <div style={{ flex: "1" }} />
-        <Show when={ajuda()}>
-          <span title="Usar ajuda fica marcado no ranking" style={selo}>
-            usou ajuda
-          </span>
-        </Show>
+        <SeloAjudas ajudas={ajudas()} grau={grau()} />
         <Relogio texto={tempoNaTela()} terminou={terminou() !== undefined} />
       </div>
 
       <Show when={terminou() !== undefined}>
         <CartaoFinal
           titulo={`Terminou a ${NIVEL_INFO[nivel].nome} em ${formataTempo(terminou()!)}!`}
-          texto={ajuda() ? "Com ajuda, fica o selo no ranking." : "Sem ajuda nenhuma. Bonito."}
+          texto={resumoFinal(ajudas(), grau())}
           acao="Ver o ranking"
           aoClicar={props.voltar}
         />
@@ -2028,7 +2425,7 @@ function Cruzada(props: {
           erradas={erradas()}
           reveladas={reveladas()}
           aviso={aviso()}
-          textoAjuda="Qualquer ajuda fica marcada no ranking. Espaço vira a direção, Tab pula de palavra."
+          textoAjuda="Checar e revelar ficam marcados no ranking: primeiro vem quem não usou nada, depois quem só checou, depois quem revelou. Espaço vira a direção, Tab pula de palavra."
           escrever={(r, c, l) => escrever(r, c, l)}
           ajuda={pedirAjuda}
         />
@@ -2229,7 +2626,7 @@ function SalaEmGrupo(props: { id: string; chamar: Api; voltar: () => void }) {
 
   const avisoDaTela = () =>
     aviso() ||
-    (sala()?.cheia_errada ? "A grade está cheia, mas tem letra errada em algum lugar." : "");
+    (sala()?.cheia_errada ? "A grade está cheia, mas tem letra errada. Aperta Finalizei, checar pra ver onde." : "");
 
   async function copiarConvite() {
     try {
@@ -2267,10 +2664,8 @@ function SalaEmGrupo(props: { id: string; chamar: Api; voltar: () => void }) {
         <Show when={foto() && !conectado() && !erroFatal()}>
           <span style={selo}>reconectando…</span>
         </Show>
-        <Show when={sala()?.ajuda}>
-          <span title="A sala usou alguma ajuda" style={selo}>
-            usou ajuda
-          </span>
+        <Show when={sala()}>
+          <SeloAjudas ajudas={sala()!.ajudas ?? []} grau={sala()!.grau_ajuda ?? 0} />
         </Show>
         <Relogio texto={tempoNaTela()} terminou={terminou()} />
       </div>
@@ -2375,14 +2770,20 @@ function SalaEmGrupo(props: { id: string; chamar: Api; voltar: () => void }) {
             titulo={`Terminaram em ${formataTempo(sala()!.tempo_ms!)}!`}
             texto={
               sala()!.tipo === "equipe"
-                ? sala()!.ajuda
-                  ? `Entrou no ranking de equipes da ${nomeNivel()}, com o selo de ajuda.`
-                  : `Entrou no ranking de equipes da ${nomeNivel()}, sem ajuda nenhuma.`
-                : "Grade fechada em grupo."
+                ? `Entrou no ranking de equipes da ${nomeNivel()}. ${resumoFinal(sala()!.ajudas ?? [], sala()!.grau_ajuda ?? 0)}`
+                : `Grade fechada em grupo. ${resumoFinal(sala()!.ajudas ?? [], sala()!.grau_ajuda ?? 0)}`
             }
             acao={sala()!.tipo === "equipe" ? "Ver o ranking" : "Voltar pras palavras cruzadas"}
             aoClicar={props.voltar}
           />
+          <Show when={sala()!.ajudas?.length}>
+            <div style={{ ...cartao, "max-width": "none", padding: "14px 8px 4px" }}>
+              <div style={{ "font-weight": "700", padding: "0 12px", "font-size": "0.92em" }}>
+                Quando cada um pediu ajuda
+              </div>
+              <LinhaDoTempoAjudas ajudas={sala()!.ajudas} tempo_ms={sala()!.tempo_ms ?? 0} />
+            </div>
+          </Show>
         </Show>
 
         <Show when={grade()}>
@@ -2395,8 +2796,8 @@ function SalaEmGrupo(props: { id: string; chamar: Api; voltar: () => void }) {
             aviso={avisoDaTela()}
             textoAjuda={
               sala()!.tipo === "equipe"
-                ? "Ajuda vale pra equipe inteira e fica marcada no ranking. Espaço vira a direção, Tab pula de palavra."
-                : "Ajuda aparece pra todo mundo da sala. Espaço vira a direção, Tab pula de palavra."
+                ? "Checar e revelar valem pra equipe inteira e ficam marcados no ranking, com o nome de quem usou. Espaço vira a direção, Tab pula de palavra."
+                : "Checagens e revelações aparecem pra todo mundo da sala. Espaço vira a direção, Tab pula de palavra."
             }
             corDaCasa={(r, c) => {
               const autor = foto()?.autores?.[r]?.[c];
