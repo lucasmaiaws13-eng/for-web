@@ -167,6 +167,7 @@ const routes = () => (
       <Route path="/bot/:code" component={BotRedirect} />
       <Route path="/friends" component={Friends} />
       <Route path="/minigames" component={MinigamesPage} />
+      <Route path="/minigames/sala/:id" component={MinigamesPage} />
       <Route path="/server/:server/*">
         <Route path="/channel/:channel/*" component={ChannelPage} />
         <Route path="/*" component={ServerHome} />
