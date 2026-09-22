@@ -194,3 +194,9 @@
     box-shadow: 0 0 0 8px transparent;
   }
 }
+
+/* Quem clicou e ainda esta conectando, na lista do canal */
+@keyframes callju-piscando {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}

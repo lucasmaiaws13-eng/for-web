@@ -9,7 +9,8 @@ import { Avatar } from "@revolt/ui/components/design";
  * Entrar leva alguns segundos: o servidor precisa autorizar, a conexao precisa
  * fechar e o microfone precisa abrir. Antes disso a tela ficava vazia e dava a
  * impressao de que o clique nao tinha pegado. Agora a pessoa ja se ve dentro
- * da chamada, com o aviso de que o audio ainda esta chegando.
+ * da chamada, piscando. O aviso de "Conectando" fica no canto do card, que ja
+ * basta: escrever de novo no meio da tela era repeticao.
  */
 export function EsperandoConexao() {
   const client = useClient();
@@ -23,7 +24,6 @@ export function EsperandoConexao() {
           fallback={client().user?.displayName ?? "?"}
         />
       </Piscando>
-      <Texto>Conectando ao áudio…</Texto>
     </Espera>
   );
 }
@@ -36,7 +36,6 @@ const Espera = styled("div", {
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    gap: "10px",
   },
 });
 
@@ -47,9 +46,3 @@ const Piscando = styled("div", {
   },
 });
 
-const Texto = styled("div", {
-  base: {
-    fontSize: "0.85em",
-    opacity: 0.6,
-  },
-});

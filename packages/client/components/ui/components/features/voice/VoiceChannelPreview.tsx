@@ -13,6 +13,7 @@ import { cva } from "styled-system/css";
 import { styled } from "styled-system/jsx";
 
 import { UserContextMenu } from "@revolt/app";
+import { useClient } from "@revolt/client";
 import { useUser } from "@revolt/markdown/users";
 import { InRoom, comRabo, useVoice } from "@revolt/rtc";
 
@@ -85,16 +86,52 @@ function VariantLive() {
  * Use LiveKit as the source of truth
  */
 function VariantPreview(props: { channel: Channel }) {
+  const voice = useVoice();
+  const client = useClient();
+
+  /**
+   * Quem acabou de clicar ainda nao esta nesta lista: ela vem do servidor, e o
+   * aviso de entrada so chega quando a conexao fecha. Ate la a propria pessoa
+   * aparece aqui piscando, pra lista responder ao clique na hora.
+   */
+  const entrando = () => {
+    const eu = client().user?.id;
+    return (
+      !!eu &&
+      voice.channel()?.id === props.channel.id &&
+      voice.state() !== "CONNECTED" &&
+      !props.channel.voiceParticipants.has(eu)
+    );
+  };
+
   return (
-    <Show when={props.channel.voiceParticipants.size}>
+    <Show when={props.channel.voiceParticipants.size || entrando()}>
       <Base>
         <For each={[...props.channel.voiceParticipants.values()]}>
           {(participant) => <ParticipantPreview participant={participant} />}
         </For>
+        <Show when={entrando()}>
+          <Entrando>
+            <CommonUser
+              userId={client().user!.id}
+              speaking={false}
+              muted={false}
+              deafened={false}
+              camera={false}
+              screenshare={false}
+            />
+          </Entrando>
+        </Show>
       </Base>
     </Show>
   );
 }
+
+const Entrando = styled("div", {
+  base: {
+    animation: "callju-piscando 1.4s ease-in-out infinite",
+  },
+});
 
 /**
  * Live variant of participant
