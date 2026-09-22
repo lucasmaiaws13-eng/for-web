@@ -147,29 +147,6 @@ export const ServerList = (props: Props) => {
             }
           />
         </a>
-        <Tooltip
-          placement="right"
-          content={() => (
-            <Column>
-              <span>{props.user.username}</span>
-              <Text class="label" size="small">
-                {props.user.presence}
-              </Text>
-            </Column>
-          )}
-          aria={props.user.username}
-        >
-          <a ref={setMenuButton} class={entryContainer()}>
-            <Avatar
-              size={42}
-              src={props.user.avatarURL}
-              holepunch={"bottom-right"}
-              overlay={<UserStatus.Graphic status={props.user.presence} />}
-              interactive
-            />
-          </a>
-          <UserMenu anchor={menuButton} />
-        </Tooltip>
         {/* Minigames, logo abaixo do botao do menu. Fica fixo aqui, e nao
             dentro da lista de servidores, para ninguem precisar procurar. */}
         <Tooltip placement="right" content="Minigames" aria="Minigames">
@@ -177,7 +154,7 @@ export const ServerList = (props: Props) => {
             <Avatar
               size={42}
               fallback={
-                <Symbol size={24} color="var(--callju-accent)">
+                <Symbol size={24} color="var(--md-sys-color-primary)">
                   sports_esports
                 </Symbol>
               }
@@ -342,6 +319,31 @@ export const ServerList = (props: Props) => {
       <Shadow>
         <div />
       </Shadow>
+      {/* A propria conta fica no rodape, junto das configuracoes: era o
+          primeiro icone da barra e ninguem entendia que aquilo era o perfil */}
+      <Tooltip
+        placement="right"
+        content={() => (
+          <Column>
+            <span>{props.user.username}</span>
+            <Text class="label" size="small">
+              {props.user.presence}
+            </Text>
+          </Column>
+        )}
+        aria={props.user.username}
+      >
+        <a ref={setMenuButton} class={entryContainer()}>
+          <Avatar
+            size={42}
+            src={props.user.avatarURL}
+            holepunch={"bottom-right"}
+            overlay={<UserStatus.Graphic status={props.user.presence} />}
+            interactive
+          />
+        </a>
+        <UserMenu anchor={menuButton} />
+      </Tooltip>
       <Tooltip placement="right" content="Settings">
         <a
           class={entryContainer()}

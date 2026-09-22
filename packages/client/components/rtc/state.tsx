@@ -407,6 +407,11 @@ class Voice {
       this.sound.playSound("userLeaveVoice");
 
       this.#pararDeAcompanhar(participante.identity);
+
+      // O servidor do Stoat as vezes nao manda o aviso de saida, e a pessoa
+      // fica de fantasma na lista do canal. Quem esta na call sabe da saida na
+      // hora, pelo proprio LiveKit: da pra corrigir a lista aqui mesmo.
+      this.#tirarDaLista(participante.identity);
     });
 
 
@@ -474,12 +479,31 @@ class Voice {
     marcar("conectado");
   }
 
+  /**
+   * Tira alguem da lista de quem esta no canal de voz.
+   *
+   * A lista vem dos avisos do servidor. Quando um aviso se perde, a pessoa
+   * fica ali parada, muda, ate a pagina ser recarregada. Aqui ela sai assim
+   * que o LiveKit conta que a conexao caiu.
+   */
+  #tirarDaLista(identidade: string) {
+    const canal = this.channel();
+    if (canal?.voiceParticipants.has(identidade)) {
+      canal.voiceParticipants.delete(identidade);
+    }
+  }
+
   disconnect() {
     this.device.releaseWakeLock();
     this.#pararDeMedirMicrofone();
     try {
       const room = this.room();
       if (!room) return;
+
+      // Sair da call tira a gente da lista na hora, sem esperar a volta do
+      // aviso do servidor
+      const eu = room.localParticipant.identity;
+      if (eu) this.#tirarDaLista(eu);
 
       room.removeAllListeners();
       room.disconnect();

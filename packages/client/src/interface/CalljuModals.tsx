@@ -1,5 +1,7 @@
 import { For, Show, createEffect, createSignal, onCleanup } from "solid-js";
 
+import { Symbol } from "@revolt/ui/components/utils/Symbol";
+
 /**
  * Modais do Callju: guia em carrossel e apoio via Pix.
  *
@@ -53,18 +55,50 @@ function Overlay(props: {
             "max-width": props.largura ?? "440px",
             "max-height": "88vh",
             overflow: "auto",
-            padding: "26px 24px 22px",
-            "border-radius": "20px",
+            padding: "24px 24px 20px",
+            "border-radius": "22px",
             color: "var(--md-sys-color-on-surface)",
-            background: "var(--md-sys-color-surface-container-high)",
-            "box-shadow": "0 28px 70px rgba(0, 0, 0, 0.5)",
-            border: "1px solid var(--callju-accent-line)",
+            // Vidro, como o resto do app. O contorno laranja em volta de cada
+            // pop-up deixava tudo com cara de aviso de erro.
+            background: "rgba(22, 22, 26, 0.86)",
+            "backdrop-filter": "blur(22px) saturate(1.2)",
+            "-webkit-backdrop-filter": "blur(22px) saturate(1.2)",
+            "box-shadow":
+              "inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 28px 70px rgba(0, 0, 0, 0.55)",
+            border: "1px solid rgba(255, 255, 255, 0.09)",
           }}
         >
           {props.children}
         </div>
       </div>
     </Show>
+  );
+}
+
+/**
+ * Selo do icone no topo do pop-up.
+ *
+ * Pop-up so de texto nao diz do que se trata antes de a pessoa ler. O selo com
+ * o icone entrega o assunto num olhar, e usa o degrade da marca, o mesmo dos
+ * botoes principais.
+ */
+function SeloDoModal(props: { icone: string }) {
+  return (
+    <span
+      style={{
+        width: "44px",
+        height: "44px",
+        display: "flex",
+        "align-items": "center",
+        "justify-content": "center",
+        "border-radius": "14px",
+        color: "#fff",
+        background: "var(--callju-grad)",
+        "box-shadow": "0 6px 18px rgba(0, 0, 0, 0.4)",
+      }}
+    >
+      <Symbol size={24}>{props.icone}</Symbol>
+    </span>
   );
 }
 
@@ -75,17 +109,18 @@ function BotaoFechar(props: { onClick: () => void }) {
       aria-label="Fechar"
       class="callju-btn-ghost"
       style={{
-        width: "30px",
-        height: "30px",
+        width: "32px",
+        height: "32px",
         padding: "0",
-        background: "transparent",
-        color: "var(--md-sys-color-on-surface)",
-        opacity: "0.45",
-        "font-size": "1.4em",
-        "line-height": "1",
+        display: "flex",
+        "align-items": "center",
+        "justify-content": "center",
+        "border-radius": "99px",
+        background: "rgba(255, 255, 255, 0.05)",
+        color: "var(--md-sys-color-on-surface-variant)",
       }}
     >
-      &times;
+      <Symbol size={18}>close</Symbol>
     </button>
   );
 }
@@ -96,37 +131,37 @@ function BotaoFechar(props: { onClick: () => void }) {
 
 const PASSOS = [
   {
-    emoji: "🥭",
+    icone: "waving_hand",
     titulo: "Bem-vindo ao Callju",
     texto:
       "É o nosso canto pra jogar e conversar. Voz em alta qualidade, tela em 1080p, sem anúncio e sem limite artificial de nada.",
   },
   {
-    emoji: "🚪",
+    icone: "login",
     titulo: "Entrar no servidor",
     texto:
       "Use o botão no fim deste guia, ou o primeiro cartão da tela inicial. Você entra na hora, sem precisar pedir autorização a ninguém.",
   },
   {
-    emoji: "🎙️",
+    icone: "mic",
     titulo: "Conversar por voz",
     texto:
       "Clique num canal com ícone de alto-falante e pronto, você já está na call. Não precisa ligar pra ninguém nem esperar alguém atender.",
   },
   {
-    emoji: "🖥️",
+    icone: "screen_share",
     titulo: "Compartilhar a tela",
     texto:
       "Dentro do canal de voz, use o botão de tela na barra de controles. Dá pra escolher a tela inteira ou só uma janela, com ou sem o áudio do jogo.",
   },
   {
-    emoji: "🎧",
+    icone: "headset_mic",
     titulo: "Se o microfone estiver ruim",
     texto:
       "Vá em Configurações e depois Áudio. A dica que resolve quase sempre: se você usa fone Bluetooth, escolha o microfone do notebook. O Bluetooth derruba a qualidade do som dos dois lados ao mesmo tempo.",
   },
   {
-    emoji: "📱",
+    icone: "install_mobile",
     titulo: "Instalar como aplicativo",
     texto:
       "No Chrome, abra o menu e escolha Instalar. Fica com cara de programa de verdade, sem barra de navegador em volta.",
@@ -199,7 +234,7 @@ export function GuiaModal(props: {
           {(passo) => (
             <div class="callju-rise">
               <div style={{ "font-size": "2.7em", "line-height": "1" }}>
-                {passo.emoji}
+                <Symbol size={26}>{passo.icone}</Symbol>
               </div>
               <h2
                 style={{
@@ -326,7 +361,7 @@ export function PixModal(props: {
           "justify-content": "space-between",
         }}
       >
-        <span style={{ "font-size": "2em", "line-height": "1" }}>🥭</span>
+        <SeloDoModal icone="volunteer_activism" />
         <BotaoFechar onClick={props.fechar} />
       </div>
 
@@ -366,7 +401,7 @@ export function PixModal(props: {
         onClick={copiar}
         style={{ width: "100%", padding: "13px", "font-size": "0.98em" }}
       >
-        {copiado() ? "Copiado! Valeu demais 🧡" : "Copiar chave Pix"}
+        {copiado() ? "Copiado. Valeu demais!" : "Copiar chave Pix"}
       </button>
 
       <p
@@ -447,7 +482,7 @@ export function AvisoModal(props: {
           }}
           style={{ flex: "1", padding: "12px 20px", "font-size": "0.95em" }}
         >
-          🥭 Quero ajudar
+          Quero ajudar
         </button>
       </div>
     </Overlay>
@@ -477,7 +512,7 @@ export function AppModal(props: { aberto: boolean; fechar: () => void }) {
           "justify-content": "space-between",
         }}
       >
-        <span style={{ "font-size": "2em", "line-height": "1" }}>🖥️</span>
+        <SeloDoModal icone="desktop_windows" />
         <BotaoFechar onClick={props.fechar} />
       </div>
 

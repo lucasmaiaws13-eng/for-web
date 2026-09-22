@@ -100,9 +100,19 @@ export function ParticipantTile(props: TileProps) {
       : { height: "100%" };
   };
 
+  // Quem esta transmitindo vira a propria transmissao: o quadrinho com a foto
+  // ao lado da tela compartilhada era a mesma pessoa duas vezes.
+  const quadroSobrando = () =>
+    !isScreenShare() &&
+    !isVideo() &&
+    (participant.isLocal ? voice.screenshare() : participant.isScreenShareEnabled);
+
   return (
     <Show
-      when={!isScreenShare() || !assistindo() || !isRemoteScreenShareMuted()}
+      when={
+        (!isScreenShare() || !assistindo() || !isRemoteScreenShareMuted()) &&
+        !quadroSobrando()
+      }
     >
       <div
         class={
@@ -138,6 +148,15 @@ export function ParticipantTile(props: TileProps) {
               when={isScreenShare() && !assistindo()}
               fallback={
                 <AvatarOnly>
+                  {/* Fundo tirado da propria foto: a imagem entra ampliada e
+                      bem desfocada, entao o que sobra dela sao as cores. Como
+                      e a foto da pessoa, cada quadrinho fica com a cara de
+                      quem esta ali, sem precisar escolher cor nenhuma. */}
+                  <Show when={user().avatar}>
+                    <FundoDaFoto style={{ "background-image": `url(${user().avatar})` }} />
+                    <VeuDoFundo />
+                  </Show>
+
                   <Avatar
                     src={user().avatar}
                     fallback={user().username}
@@ -272,6 +291,8 @@ export const tile = cva({
   base: {
     display: "grid",
     aspectRatio: "16/9",
+    // O quadrinho entra subindo, em vez de simplesmente surgir
+    animation: "callju-entrada var(--mov-entrada) both",
     transition:
       "outline-color var(--mov-toque), background var(--mov-estado), transform var(--mov-estado), box-shadow var(--mov-estado), width 0s, height 0s",
     borderRadius: "var(--borderRadius-lg)",
@@ -351,15 +372,52 @@ const ConviteLive = styled("div", {
   },
 });
 
+const FundoDaFoto = styled("div", {
+  base: {
+    gridArea: "1/1",
+    width: "100%",
+    height: "100%",
+
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+
+    // Desfoque forte e um empurrao de saturacao: sobra a cor, nao o desenho.
+    // A escala evita a borda apagada que o desfoque cria nos cantos.
+    filter: "blur(28px) saturate(1.6)",
+    transform: "scale(1.4)",
+    opacity: 0.55,
+  },
+});
+
+/**
+ * Veu por cima do fundo.
+ *
+ * Foto clara deixaria o nome e os icones ilegiveis. O veu escurece o suficiente
+ * pra leitura continuar facil, e ainda ajuda o quadrinho a conversar com o
+ * preto do resto do app.
+ */
+const VeuDoFundo = styled("div", {
+  base: {
+    gridArea: "1/1",
+    width: "100%",
+    height: "100%",
+    background:
+      "linear-gradient(to bottom, rgba(8, 8, 10, 0.45), rgba(8, 8, 10, 0.72))",
+  },
+});
+
 const AvatarOnly = styled("div", {
   base: {
+    position: "relative",
     gridArea: "1/1",
     display: "grid",
     placeItems: "center",
     overflow: "hidden",
 
     // TODO: Refactor the avatar component to be reactive later.
-    "& > *": {
+    "& > svg": {
+      position: "relative",
+      zIndex: 1,
       width: "auto !important",
       height: "30% !important",
       minHeight: "48px",

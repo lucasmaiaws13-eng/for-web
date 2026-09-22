@@ -37,21 +37,6 @@ export function VoiceCallCardActions(props: { size: "xs" | "sm" }) {
           <Symbol>arrow_top_left</Symbol>
         </IconButton>
       </Show>
-      <Show when={props.size !== "xs" && voice.layout() === "collapsed"}>
-        <IconButton
-          variant="standard"
-          size={props.size}
-          onPress={() => voice.toggleLayout("collapsed")}
-          use:floating={{
-            tooltip: {
-              placement: "top",
-              content: t`Restore call window`,
-            },
-          }}
-        >
-          <Symbol>unfold_more</Symbol>
-        </IconButton>
-      </Show>
       <IconButton
         size={props.size}
         variant={voice.microphone() ? "filled" : "tonal"}
@@ -153,6 +138,23 @@ export function VoiceCallCardActions(props: { size: "xs" | "sm" }) {
       >
         <Symbol>call_end</Symbol>
       </Button>
+      {/* Restaurar fica na direita, do mesmo lado de onde a call foi
+          encolhida: fechar num canto e abrir no outro nao faz sentido */}
+      <Show when={props.size !== "xs" && voice.layout() === "collapsed"}>
+        <IconButton
+          variant="standard"
+          size={props.size}
+          onPress={() => voice.toggleLayout("collapsed")}
+          use:floating={{
+            tooltip: {
+              placement: "top",
+              content: t`Restore call window`,
+            },
+          }}
+        >
+          <Symbol>unfold_more</Symbol>
+        </IconButton>
+      </Show>
     </Actions>
   );
 }

@@ -205,8 +205,10 @@
    Mais fundo que o degrade da marca (--callju-grad) porque aqui entra texto
    claro por cima, e o laranja claro nao seguraria a leitura. */
 :root {
-  --callju-destaque: linear-gradient(115deg, #5c2200 0%, #7a3806 45%, #a85a1c 100%);
-  --callju-destaque-texto: #ffe6d2;
+  /* Um degrade so no app inteiro: o mesmo do botao principal. O degrade
+     escuro que existia aqui saia marrom e nao combinava com nada. */
+  --callju-destaque: var(--callju-grad);
+  --callju-destaque-texto: #fff;
 }
 
 /* Detalhes do tema escuro do Callju */

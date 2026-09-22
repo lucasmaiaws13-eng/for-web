@@ -183,7 +183,13 @@ export function Messages(props: Props) {
    */
   function setMessagesSafely(...messagesArr: MessageInterface[][]) {
     setMessages(
-      messagesArr.flat().toSorted((a, b) => b.id.localeCompare(a.id)),
+      messagesArr
+        .flat()
+        // O canal de voz virava uma lista de "fulano iniciou uma chamada",
+        // uma linha por vez que alguem entrou. Nao diz nada que a propria
+        // lista de quem esta na call ja nao mostre, e enterra a conversa.
+        .filter((mensagem) => mensagem.systemMessage?.type !== "call_started")
+        .toSorted((a, b) => b.id.localeCompare(a.id)),
     );
   }
 

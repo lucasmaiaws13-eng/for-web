@@ -24,49 +24,61 @@ const CHAVE_PIX = "+5591983673239";
 // Enquanto estiver com o valor de exemplo, o botao fica escondido.
 const CONVITE_SERVIDOR = "TA4TJ57t";
 
+/** Nome do servidor principal, como aparece no botao de entrar */
+const NOME_DO_SERVIDOR = "Salvação";
+
 /** De quanto em quanto tempo o carrossel troca sozinho */
 const TEMPO_DO_SLIDE = 7000;
 
 const Base = styled("div", {
   base: {
+    position: "relative",
     width: "100%",
+    height: "100%",
+    minHeight: 0,
     display: "flex",
     flexDirection: "column",
     color: "var(--md-sys-color-on-surface)",
   },
 });
 
+/**
+ * O conteudo fica no meio da tela, na vertical e na horizontal.
+ *
+ * Antes ele comecava no topo e deixava metade da tela vazia embaixo, o que
+ * fazia a home parecer inacabada em telas grandes.
+ */
 const content = cva({
   base: {
     ...main.raw(),
-    padding: "40px 20px 56px",
-    gap: "22px",
+    padding: "24px 20px 40px",
+    gap: "18px",
     alignItems: "center",
+    justifyContent: "center",
   },
 });
 
 /**
- * Painel de vidro.
+ * Placa de vidro.
  *
- * O desfoque com o contorno claro por cima da a impressao de uma placa de
- * vidro sobre o fundo. Quem desligou os efeitos de transparencia nas
- * configuracoes recebe a mesma placa em cor cheia: o desenho continua de pe,
- * sem o custo de desfocar a tela.
+ * Desfoque do que esta atras, contorno claro em cima e sombra embaixo: o
+ * conjunto da a impressao de uma placa de vidro sobre o fundo. Quem desligou
+ * os efeitos de transparencia recebe a mesma placa em cor cheia.
  */
 const Vidro = styled("div", {
   base: {
     position: "relative",
     overflow: "hidden",
-    borderRadius: "18px",
-    border: "1px solid rgba(255, 255, 255, 0.08)",
-    background: "rgba(255, 255, 255, 0.04)",
+    borderRadius: "22px",
+    border: "1px solid rgba(255, 255, 255, 0.09)",
+    background: "rgba(255, 255, 255, 0.035)",
     boxShadow:
-      "inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 12px 32px rgba(0, 0, 0, 0.35)",
+      "inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 20px 50px rgba(0, 0, 0, 0.45)",
   },
   variants: {
     desfoque: {
       true: {
-        backdropFilter: "blur(18px) saturate(1.2)",
+        backdropFilter: "blur(22px) saturate(1.25)",
       },
       false: {
         background: "var(--md-sys-color-surface-container)",
@@ -90,26 +102,26 @@ type Slide = {
 /**
  * Carrossel das novidades.
  *
- * A home antiga empilhava aviso, banner, botao e quatro cartoes, e tudo pedia
- * atencao ao mesmo tempo. Aqui as novidades se revezam num lugar so: uma de
- * cada vez, trocando sozinha, com as bolinhas pra quem quiser ir direto.
- * Passar o mouse segura o slide, porque ler importa mais que o relogio.
+ * Uma novidade de cada vez, trocando sozinha. As setas andam de slide e nao
+ * abrem nada; quem quiser abrir clica no cartao. Passar o mouse segura a
+ * troca, porque ler importa mais que o relogio.
  */
-function Carrossel(props: { slides: Slide[]; desfoque: boolean }) {
+function Carrossel(props: { slides: Slide[] }) {
   const [atual, setAtual] = createSignal(0);
   const [parado, setParado] = createSignal(false);
 
+  const andar = (passo: number) =>
+    setAtual((i) => (i + passo + props.slides.length) % props.slides.length);
+
   onMount(() => {
     const relogio = setInterval(() => {
-      if (!parado()) setAtual((i) => (i + 1) % props.slides.length);
+      if (!parado()) andar(1);
     }, TEMPO_DO_SLIDE);
     onCleanup(() => clearInterval(relogio));
   });
 
   return (
-    <Vidro
-      desfoque={props.desfoque}
-      style={{ width: "100%", "max-width": "560px" }}
+    <CarrosselBase
       onMouseEnter={() => setParado(true)}
       onMouseLeave={() => setParado(false)}
     >
@@ -118,7 +130,7 @@ function Carrossel(props: { slides: Slide[]; desfoque: boolean }) {
           {(slide) => (
             <SlideBase onClick={slide.aoClicar}>
               <Icone>
-                <Symbol size={26}>{slide.icone}</Symbol>
+                <Symbol size={24}>{slide.icone}</Symbol>
               </Icone>
 
               <span style={{ flex: "1", "min-width": "0" }}>
@@ -126,14 +138,17 @@ function Carrossel(props: { slides: Slide[]; desfoque: boolean }) {
                 <Titulo>{slide.titulo}</Titulo>
                 <Texto>{slide.texto}</Texto>
               </span>
-
-              <Seta>
-                <Symbol size={20}>chevron_right</Symbol>
-              </Seta>
             </SlideBase>
           )}
         </For>
       </Trilho>
+
+      <Seta lado="esquerda" aria-label="Anterior" onClick={() => andar(-1)}>
+        <Symbol size={18}>chevron_left</Symbol>
+      </Seta>
+      <Seta lado="direita" aria-label="Próximo" onClick={() => andar(1)}>
+        <Symbol size={18}>chevron_right</Symbol>
+      </Seta>
 
       <Bolinhas>
         <For each={props.slides}>
@@ -146,9 +161,20 @@ function Carrossel(props: { slides: Slide[]; desfoque: boolean }) {
           )}
         </For>
       </Bolinhas>
-    </Vidro>
+    </CarrosselBase>
   );
 }
+
+const CarrosselBase = styled("div", {
+  base: {
+    position: "relative",
+    width: "100%",
+    overflow: "hidden",
+    borderRadius: "16px",
+    border: "1px solid rgba(255, 255, 255, 0.07)",
+    background: "rgba(255, 255, 255, 0.03)",
+  },
+});
 
 const Trilho = styled("div", {
   base: {
@@ -162,9 +188,9 @@ const SlideBase = styled("button", {
     flex: "0 0 100%",
     display: "flex",
     alignItems: "center",
-    gap: "16px",
+    gap: "14px",
 
-    padding: "22px 22px 28px",
+    padding: "18px 44px 26px 18px",
     border: "none",
     background: "transparent",
     color: "var(--md-sys-color-on-surface)",
@@ -181,23 +207,23 @@ const SlideBase = styled("button", {
 
 const Icone = styled("span", {
   base: {
-    width: "46px",
-    height: "46px",
+    width: "42px",
+    height: "42px",
     flexShrink: 0,
     display: "grid",
     placeItems: "center",
-    borderRadius: "14px",
-    color: "#ffe6d2",
-    background: "var(--callju-destaque)",
-    boxShadow: "0 4px 14px rgba(0, 0, 0, 0.35)",
+    borderRadius: "13px",
+    color: "#fff",
+    background: "var(--callju-grad)",
+    boxShadow: "0 4px 14px rgba(0, 0, 0, 0.4)",
   },
 });
 
 const Etiqueta = styled("span", {
   base: {
     display: "block",
-    fontSize: "0.68em",
-    letterSpacing: "0.14em",
+    fontSize: "0.66em",
+    letterSpacing: "0.16em",
     textTransform: "uppercase",
     color: "var(--callju-accent-claro)",
   },
@@ -206,8 +232,8 @@ const Etiqueta = styled("span", {
 const Titulo = styled("span", {
   base: {
     display: "block",
-    marginTop: "4px",
-    fontSize: "1.05em",
+    marginTop: "3px",
+    fontSize: "1em",
     fontWeight: 700,
     letterSpacing: "-0.01em",
   },
@@ -216,24 +242,45 @@ const Titulo = styled("span", {
 const Texto = styled("span", {
   base: {
     display: "block",
-    marginTop: "3px",
-    fontSize: "0.86em",
-    opacity: 0.55,
+    marginTop: "2px",
+    fontSize: "0.83em",
+    opacity: 0.5,
     lineHeight: 1.4,
   },
 });
 
-const Seta = styled("span", {
+const Seta = styled("button", {
   base: {
-    flexShrink: 0,
+    position: "absolute",
+    top: "50%",
+    width: "28px",
+    height: "28px",
+    marginTop: "-18px",
+
     display: "grid",
     placeItems: "center",
-    opacity: 0.4,
-    transition: "transform var(--mov-toque), opacity var(--mov-toque)",
+    border: "1px solid rgba(255, 255, 255, 0.08)",
+    borderRadius: "99px",
+    background: "rgba(0, 0, 0, 0.35)",
+    color: "var(--md-sys-color-on-surface)",
+    cursor: "pointer",
 
-    "button:hover &": {
-      opacity: 0.9,
-      transform: "translateX(3px)",
+    opacity: 0,
+    transition: "opacity var(--mov-toque), background var(--mov-toque)",
+
+    "div:hover > &": {
+      opacity: 0.85,
+    },
+
+    _hover: {
+      opacity: "1 !important",
+      background: "rgba(0, 0, 0, 0.6)",
+    },
+  },
+  variants: {
+    lado: {
+      esquerda: { left: "8px" },
+      direita: { right: "8px" },
     },
   },
 });
@@ -241,19 +288,19 @@ const Seta = styled("span", {
 const Bolinhas = styled("div", {
   base: {
     position: "absolute",
-    bottom: "12px",
+    bottom: "10px",
     left: 0,
     right: 0,
     display: "flex",
     justifyContent: "center",
-    gap: "6px",
+    gap: "5px",
   },
 });
 
 const Bolinha = styled("button", {
   base: {
-    width: "6px",
-    height: "6px",
+    width: "5px",
+    height: "5px",
     padding: 0,
     border: "none",
     cursor: "pointer",
@@ -264,70 +311,10 @@ const Bolinha = styled("button", {
   variants: {
     ativa: {
       true: {
-        width: "18px",
+        width: "16px",
         background: "var(--callju-accent)",
       },
     },
-  },
-});
-
-/* ------------------------------------------------------------------ */
-/* Atalhos                                                             */
-/* ------------------------------------------------------------------ */
-
-const Atalhos = styled("div", {
-  base: {
-    width: "100%",
-    maxWidth: "560px",
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-    gap: "10px",
-  },
-});
-
-const Atalho = styled("button", {
-  base: {
-    display: "flex",
-    alignItems: "center",
-    gap: "11px",
-
-    padding: "13px 14px",
-    borderRadius: "14px",
-    border: "1px solid var(--md-sys-color-outline-variant)",
-    background: "var(--md-sys-color-surface-container)",
-    color: "var(--md-sys-color-on-surface)",
-
-    font: "inherit",
-    fontSize: "0.88em",
-    fontWeight: 600,
-    textAlign: "start",
-    cursor: "pointer",
-
-    transition:
-      "background var(--mov-toque), border-color var(--mov-toque), transform var(--mov-toque)",
-
-    _hover: {
-      background: "var(--md-sys-color-surface-container-high)",
-      borderColor: "rgba(255, 255, 255, 0.12)",
-      transform: "translateY(-2px)",
-    },
-
-    "&:active": {
-      transform: "translateY(0)",
-    },
-  },
-});
-
-const IconeAtalho = styled("span", {
-  base: {
-    width: "32px",
-    height: "32px",
-    flexShrink: 0,
-    display: "grid",
-    placeItems: "center",
-    borderRadius: "10px",
-    color: "var(--callju-accent-claro)",
-    background: "var(--callju-hover)",
   },
 });
 
@@ -366,17 +353,10 @@ export function HomePage() {
     },
     {
       etiqueta: "em fase de testes",
-      titulo: "O Callju é nosso canto na internet",
-      texto: "Feito por um amigo, sem anúncio e sem dono. Veja como funciona",
+      titulo: "Nosso canto na internet",
+      texto: "Sem anúncio e sem dono. Veja como o Callju funciona",
       icone: "favorite",
       aoClicar: () => setAvisoAberto(true),
-    },
-    {
-      etiqueta: "apoie",
-      titulo: "Me ajude a manter no ar",
-      texto: "O servidor tem custo todo mês e sai do bolso do Lucas",
-      icone: "volunteer_activism",
-      aoClicar: () => setPixAberto(true),
     },
   ];
 
@@ -392,91 +372,56 @@ export function HomePage() {
       <div use:scrollable={{ class: content() }}>
         <Brilho />
 
-        {/* Marca menor do que era: ela apresenta a casa, nao ocupa a casa */}
-        <Marca class="callju-rise">
-          <img src="/assets/web/callju-marca.png" alt="" />
-          <span>
-            <span class="callju-wordmark">Callju</span>
-            <small>call + caju</small>
-          </span>
-        </Marca>
-
-        <Show when={conviteConfigurado}>
-          <button
-            class="callju-btn callju-rise"
-            onClick={() => navigate(`/invite/${CONVITE_SERVIDOR}`)}
-            style={{
-              width: "100%",
-              "max-width": "560px",
-              padding: "15px 20px",
-              display: "flex",
-              "align-items": "center",
-              gap: "14px",
-              "text-align": "start",
-            }}
-          >
-            <Symbol size={22}>headset_mic</Symbol>
-            <span style={{ flex: "1", "min-width": "0" }}>
-              <span
-                style={{
-                  display: "block",
-                  "font-size": "1.02em",
-                  "font-weight": "700",
-                  "letter-spacing": "-0.01em",
-                }}
-              >
-                Entrar no servidor
-              </span>
-              <span
-                style={{
-                  display: "block",
-                  "font-size": "0.84em",
-                  opacity: "0.85",
-                  "margin-top": "2px",
-                }}
-              >
-                pra conversar com a galera é por aqui
-              </span>
+        <Painel desfoque={state.theme.blur} class="callju-rise">
+          <Marca>
+            <img src="/assets/web/callju-marca.png" alt="" />
+            <span>
+              <span class="callju-wordmark">Callju</span>
+              <small>call + caju</small>
             </span>
-            <Symbol size={20}>chevron_right</Symbol>
-          </button>
-        </Show>
+          </Marca>
 
-        <Carrossel slides={slides} desfoque={state.theme.blur} />
+          <Show when={conviteConfigurado}>
+            <Entrar onClick={() => navigate(`/invite/${CONVITE_SERVIDOR}`)}>
+              <Symbol size={20}>headset_mic</Symbol>
+              <span>
+                Entrar no {NOME_DO_SERVIDOR}
+                <small>pra conversar com a galera é por aqui</small>
+              </span>
+              <Symbol size={18}>chevron_right</Symbol>
+            </Entrar>
+          </Show>
 
-        <Atalhos>
-          <Atalho
-            onClick={() =>
-              openModal({ type: "create_group_or_server", client: client()! })
-            }
-          >
-            <IconeAtalho>
-              <Symbol size={19}>add</Symbol>
-            </IconeAtalho>
-            Criar um grupo
-          </Atalho>
+          <Carrossel slides={slides} />
 
-          <Atalho onClick={() => setGuiaAberto(true)}>
-            <IconeAtalho>
-              <Symbol size={19}>menu_book</Symbol>
-            </IconeAtalho>
-            Como usar
-          </Atalho>
+          <Atalhos>
+            <Atalho
+              onClick={() =>
+                openModal({ type: "create_group_or_server", client: client()! })
+              }
+            >
+              <Symbol size={18}>add</Symbol>
+              Criar um grupo
+            </Atalho>
 
-          <Atalho onClick={() => navigate("/minigames")}>
-            <IconeAtalho>
-              <Symbol size={19}>sports_esports</Symbol>
-            </IconeAtalho>
-            Minigames
-          </Atalho>
+            <Atalho onClick={() => setGuiaAberto(true)}>
+              <Symbol size={18}>menu_book</Symbol>
+              Como usar
+            </Atalho>
 
-          <Atalho onClick={() => setPixAberto(true)}>
-            <IconeAtalho>
-              <Symbol size={19}>favorite</Symbol>
-            </IconeAtalho>
-            Apoiar o Callju
-          </Atalho>
-        </Atalhos>
+            <Atalho onClick={() => navigate("/minigames")}>
+              <Symbol size={18}>sports_esports</Symbol>
+              Minigames
+            </Atalho>
+          </Atalhos>
+        </Painel>
+
+        {/* Apoiar sai do meio da tela e vira um botao de canto: ele importa,
+            mas nao e o que a pessoa veio fazer aqui */}
+        <Apoiar onClick={() => setPixAberto(true)}>
+          <Symbol size={18}>favorite</Symbol>
+          <span>Apoiar o Callju</span>
+        </Apoiar>
 
         <GuiaModal
           aberto={guiaAberto()}
@@ -509,24 +454,31 @@ export function HomePage() {
   );
 }
 
+const Painel = styled(Vidro, {
+  base: {
+    width: "100%",
+    maxWidth: "520px",
+    padding: "24px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "16px",
+  },
+});
+
 /**
- * Luz fraca atras do conteudo.
- *
- * Um circulo grande e bem apagado na cor da marca, no alto da tela. E o unico
- * lugar da home com cor no fundo: o resto e preto, e a luz so tira o ar de
- * pagina vazia.
+ * Luz fraca atras do painel: unico lugar da home com cor no fundo.
  */
 const Brilho = styled("div", {
   base: {
     position: "absolute",
-    top: "-140px",
+    top: "10%",
     left: "50%",
-    width: "760px",
-    height: "420px",
+    width: "620px",
+    height: "380px",
     transform: "translateX(-50%)",
     pointerEvents: "none",
     background:
-      "radial-gradient(closest-side, rgba(232, 130, 60, 0.13), transparent)",
+      "radial-gradient(closest-side, rgba(232, 130, 60, 0.14), transparent)",
   },
 });
 
@@ -534,12 +486,11 @@ const Marca = styled("div", {
   base: {
     display: "flex",
     alignItems: "center",
-    gap: "12px",
-    marginBottom: "2px",
+    gap: "11px",
 
     "& img": {
-      width: "54px",
-      height: "54px",
+      width: "44px",
+      height: "44px",
     },
 
     "& > span": {
@@ -549,17 +500,147 @@ const Marca = styled("div", {
     },
 
     "& .callju-wordmark": {
-      fontSize: "2.1em",
+      fontSize: "1.7em",
       fontWeight: 800,
       letterSpacing: "-0.035em",
     },
 
     "& small": {
-      marginTop: "6px",
-      fontSize: "0.62em",
+      marginTop: "5px",
+      fontSize: "0.6em",
       letterSpacing: "0.26em",
       textTransform: "uppercase",
-      opacity: 0.35,
+      opacity: 0.32,
+    },
+  },
+});
+
+/**
+ * Entrar no servidor: discreto de proposito.
+ *
+ * Era um botao inteiro no degrade, gritando mais que tudo em volta. Agora e um
+ * bloco de vidro com um fio da cor da marca, que acende ao passar o mouse.
+ */
+const Entrar = styled("button", {
+  base: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+
+    padding: "13px 16px",
+    borderRadius: "14px",
+    border: "1px solid var(--callju-accent-line)",
+    background: "var(--callju-accent-soft)",
+    color: "var(--callju-accent-claro)",
+
+    font: "inherit",
+    textAlign: "start",
+    cursor: "pointer",
+    transition:
+      "background var(--mov-toque), border-color var(--mov-toque), transform var(--mov-toque)",
+
+    "& > span": {
+      flex: 1,
+      minWidth: 0,
+      display: "flex",
+      flexDirection: "column",
+      fontWeight: 700,
+      fontSize: "0.98em",
+      letterSpacing: "-0.01em",
+    },
+
+    "& small": {
+      marginTop: "2px",
+      fontWeight: 400,
+      fontSize: "0.78em",
+      color: "var(--md-sys-color-on-surface-variant)",
+    },
+
+    _hover: {
+      background: "rgba(232, 130, 60, 0.16)",
+      borderColor: "var(--callju-accent)",
+      transform: "translateY(-1px)",
+    },
+
+    "&:active": {
+      transform: "translateY(0)",
+    },
+  },
+});
+
+const Atalhos = styled("div", {
+  base: {
+    display: "flex",
+    gap: "8px",
+    flexWrap: "wrap",
+  },
+});
+
+const Atalho = styled("button", {
+  base: {
+    flex: "1 1 140px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "8px",
+
+    padding: "11px 12px",
+    borderRadius: "12px",
+    border: "1px solid rgba(255, 255, 255, 0.07)",
+    background: "rgba(255, 255, 255, 0.03)",
+    color: "var(--md-sys-color-on-surface-variant)",
+
+    font: "inherit",
+    fontSize: "0.85em",
+    fontWeight: 600,
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+
+    transition:
+      "background var(--mov-toque), color var(--mov-toque), transform var(--mov-toque)",
+
+    _hover: {
+      background: "rgba(255, 255, 255, 0.07)",
+      color: "var(--md-sys-color-on-surface)",
+      transform: "translateY(-2px)",
+    },
+
+    "&:active": {
+      transform: "translateY(0)",
+    },
+  },
+});
+
+const Apoiar = styled("button", {
+  base: {
+    position: "fixed",
+    right: "20px",
+    bottom: "20px",
+    zIndex: 3,
+
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+
+    padding: "9px 14px",
+    borderRadius: "99px",
+    border: "1px solid rgba(255, 255, 255, 0.08)",
+    background: "rgba(255, 255, 255, 0.05)",
+    backdropFilter: "blur(14px)",
+    color: "var(--md-sys-color-on-surface-variant)",
+
+    font: "inherit",
+    fontSize: "0.82em",
+    fontWeight: 600,
+    cursor: "pointer",
+
+    transition:
+      "background var(--mov-toque), color var(--mov-toque), transform var(--mov-toque)",
+
+    _hover: {
+      background: "var(--callju-accent-soft)",
+      color: "var(--callju-accent-claro)",
+      transform: "translateY(-2px)",
     },
   },
 });

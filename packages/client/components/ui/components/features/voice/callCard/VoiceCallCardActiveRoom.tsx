@@ -1,6 +1,7 @@
 import { useLingui } from "@lingui/solid/macro";
 import { createResizeObserver } from "@solid-primitives/resize-observer";
 import { createEffect, createMemo, For, onMount, Show } from "solid-js";
+import { Motion, Presence } from "solid-motionone";
 import { TrackLoop } from "solid-livekit-components";
 import { styled } from "styled-system/jsx";
 
@@ -150,10 +151,28 @@ function Participants() {
 
   return (
     <Call ref={callRef} class={voice.focusId() ? "" : scrollableStyles()}>
-      {/* Enquanto a conexao nao fecha, a pessoa ja se ve na chamada */}
-      <Show when={voice.state() !== "CONNECTED"}>
-        <EsperandoConexao />
-      </Show>
+      {/* Enquanto a conexao nao fecha, a pessoa ja se ve na chamada.
+          A troca entre esperar e estar na call e uma passagem: a foto piscando
+          sai crescendo e sumindo enquanto o quadrinho entra. Antes um sumia e
+          o outro aparecia no mesmo quadro, o que cortava a continuidade. */}
+      <Presence>
+        <Show when={voice.state() !== "CONNECTED"}>
+          <Motion.div
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.06 }}
+            transition={{ duration: 0.34, easing: [0.22, 1, 0.36, 1] }}
+            style={{
+              position: "absolute",
+              inset: 0,
+              "z-index": 2,
+              "pointer-events": "none",
+            }}
+          >
+            <EsperandoConexao />
+          </Motion.div>
+        </Show>
+      </Presence>
       <InRoom>
         <FocusedParticipant />
         <Show when={voice.focusId() && voice.layout() !== "collapsed"}>

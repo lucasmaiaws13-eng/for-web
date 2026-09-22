@@ -113,8 +113,11 @@ const Item = styled("div", {
   variants: {
     selected: {
       true: {
-        color: "var(--md-sys-color-on-primary)",
-        background: "var(--md-sys-color-primary)",
+        // A tela escolhida se marca com um contorno e a cor da marca no texto,
+        // em vez de um bloco salmao no meio do preto
+        color: "var(--callju-accent-claro)",
+        background: "var(--callju-accent-soft)",
+        boxShadow: "inset 0 0 0 1px var(--callju-accent-line)",
       },
     },
   },
