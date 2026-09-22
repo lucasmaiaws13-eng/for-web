@@ -294,7 +294,9 @@ export class Voice extends AbstractStore<"voice", TypeVoice> {
    * @returns Whether muted
    */
   getScreenShareMuted(userId: string): boolean {
-    return this.get().screenShareMutes[userId] ?? true;
+    // Live abre com som. O padrao do Stoat era mudo, e ninguem sabia que
+    // precisava desmutar cada transmissao pra ouvir
+    return this.get().screenShareMutes[userId] ?? false;
   }
 
   /**
