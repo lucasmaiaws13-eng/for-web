@@ -11,6 +11,24 @@ import { State } from "..";
 
 import { AbstractStore } from ".";
 
+/**
+ * Temas prontos: cor e esquema ja combinados.
+ *
+ * Escolher um tema pronto nao deixa trocar a cor dele, de proposito: a graca
+ * de um tema pronto e ele ser uma escolha fechada. Quem quiser mexer na cor
+ * usa o tema personalizado.
+ */
+export const TEMAS_PRONTOS = {
+  callju: { nome: "Callju", cor: "#e8823c", variante: "vibrant" },
+  grafite: { nome: "Grafite", cor: "#9fa8b4", variante: "neutral" },
+  oceano: { nome: "Oceano", cor: "#4aa3e0", variante: "vibrant" },
+  mata: { nome: "Mata", cor: "#57c27c", variante: "vibrant" },
+  vinho: { nome: "Vinho", cor: "#e0566a", variante: "vibrant" },
+  legacy: { nome: "Legacy", cor: "#e8823c", variante: "legacy" },
+} as const;
+
+export type TemaPronto = keyof typeof TEMAS_PRONTOS;
+
 export type TypeTheme = {
   /**
    * Base theme preset
@@ -21,6 +39,11 @@ export type TypeTheme = {
    * Light/dark mode
    */
   mode: "light" | "dark" | "system";
+
+  /**
+   * Tema escolhido: um dos prontos ou o personalizado
+   */
+  tema: TemaPronto | "personalizado";
 
   /**
    * Accent
@@ -136,12 +159,13 @@ export class Theme extends AbstractStore<"theme", TypeTheme> {
       preset: "you",
       mode: "dark",
 
-      m3Accent: "#e8823c",
+      tema: "callju",
+      m3Accent: TEMAS_PRONTOS.callju.cor,
       m3Contrast: 0.0,
-      // Preto neutro com laranja nos destaques. O 'content' mantem a cor da
-      // marca nos elementos de destaque em vez de lava-la, e as superficies
-      // vem do esquema monocromatico (ver materialTheme.ts).
-      m3Variant: "content",
+      // Preto neutro com laranja nos destaques: superficies monocromaticas
+      // (ver materialTheme.ts) e destaques num laranja fundo, que segura bem
+      // o texto claro por cima. O laranja cheio da marca entra pelo degrade.
+      m3Variant: "vibrant",
 
       interfaceFont: "Inter",
       monospaceFont: "Fira Code",
@@ -166,37 +190,25 @@ export class Theme extends AbstractStore<"theme", TypeTheme> {
       data.preset = input.preset!;
     }
 
-    if (typeof input.m3Contrast === "number") {
-      data.m3Contrast = input.m3Contrast;
-    }
+    // Reset geral do tema.
+    //
+    // Quem nunca escolheu um tema por nome (ou seja, todo mundo que vem de
+    // antes desta versao) recebe o padrao novo, e a cor guardada antes e
+    // descartada de proposito: o visual antigo nao volta pela porta dos fundos.
+    if (input.tema === "personalizado") {
+      data.tema = "personalizado";
 
-    if (
-      input.m3Accent &&
-      input.m3Accent.match(/#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})/)
-    ) {
-      data.m3Accent = input.m3Accent;
-    }
-
-    // O tema marrom antigo passa a se chamar Legacy, e quem estava nele vai
-    // para o tema novo: "caju" fica de fora da lista aceita, entao o valor
-    // padrao prevalece. Quem quiser o antigo escolhe Legacy nas configuracoes,
-    // e essa escolha e respeitada daqui pra frente. O resto das preferencias
-    // segue sendo lido normalmente.
-    if (
-      [
-        "legacy",
-        "monochrome",
-        "neutral",
-        "tonal_spot",
-        "vibrant",
-        "expressive",
-        "fidelity",
-        "content",
-        "rainbow",
-        "fruit_salad",
-      ].includes(input.m3Variant!)
-    ) {
-      data.m3Variant = input.m3Variant!;
+      if (
+        input.m3Accent &&
+        input.m3Accent.match(/#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})/)
+      ) {
+        data.m3Accent = input.m3Accent;
+      }
+    } else if (input.tema && input.tema in TEMAS_PRONTOS) {
+      const escolhido = TEMAS_PRONTOS[input.tema as TemaPronto];
+      data.tema = input.tema as TemaPronto;
+      data.m3Accent = escolhido.cor;
+      data.m3Variant = escolhido.variante;
     }
 
     if (typeof input.blur === "boolean") {
@@ -249,7 +261,10 @@ export class Theme extends AbstractStore<"theme", TypeTheme> {
 
           accent: opts.m3Accent,
           contrast: opts.m3Contrast,
-          variant: opts.m3Variant,
+          variant:
+            opts.tema === "personalizado"
+              ? "vibrant"
+              : TEMAS_PRONTOS[opts.tema].variante,
         };
     }
   }
@@ -267,6 +282,35 @@ export class Theme extends AbstractStore<"theme", TypeTheme> {
    */
   setMode(mode: TypeTheme["mode"]) {
     this.set("mode", mode);
+  }
+
+  /**
+   * Volta o tema para o padrao do Callju
+   */
+  restaurarPadrao() {
+    const padrao = this.default();
+    this.set("mode", padrao.mode);
+    this.set("tema", padrao.tema);
+    this.set("m3Accent", padrao.m3Accent);
+    this.set("m3Variant", padrao.m3Variant);
+    this.set("m3Contrast", padrao.m3Contrast);
+  }
+
+  /**
+   * Tema escolhido agora
+   */
+  get tema() {
+    return this.get().tema;
+  }
+
+  /**
+   * Escolher um tema pronto
+   */
+  escolherTema(nome: TemaPronto) {
+    const escolhido = TEMAS_PRONTOS[nome];
+    this.set("tema", nome);
+    this.set("m3Accent", escolhido.cor);
+    this.set("m3Variant", escolhido.variante);
   }
 
   /**
@@ -296,7 +340,10 @@ export class Theme extends AbstractStore<"theme", TypeTheme> {
    * @param accent Accent
    */
   setM3Accent(accent: string) {
+    // Mexer na cor e sempre tema seu: um tema pronto nao muda de cor
+    this.set("tema", "personalizado");
     this.set("m3Accent", accent);
+    this.set("m3Variant", "vibrant");
   }
 
   /**

@@ -11,6 +11,7 @@ import {
   UnicodeEmojiPacks,
 } from "@revolt/markdown/emoji/UnicodeEmoji";
 import { useState } from "@revolt/state";
+import { TEMAS_PRONTOS, TemaPronto } from "@revolt/state/stores/Theme";
 import {
   Avatar,
   Button,
@@ -55,17 +56,28 @@ export function AppearanceMenu() {
 
   return (
     <Column gap="lg">
-      <MessagePreview>
-        <Text>
-          Welcome to the new appearance menu, custom themes are not available
-          just yet but we are looking for feedback on how to best implement
-          them!
-        </Text>
-      </MessagePreview>
-
       <Column>
         <Text class="title" size="small">
-          Colours
+          <Trans>Temas</Trans>
+        </Text>
+
+        <Temas>
+          <For each={Object.entries(TEMAS_PRONTOS)}>
+            {([chave, tema]) => (
+              <CartaoTema
+                escolhido={state.theme.tema === chave}
+                onClick={() => state.theme.escolherTema(chave as TemaPronto)}
+                type="button"
+              >
+                <Bolinha style={{ background: tema.cor }} />
+                {tema.nome}
+              </CartaoTema>
+            )}
+          </For>
+        </Temas>
+
+        <Text class="title" size="small">
+          <Trans>Claro ou escuro</Trans>
         </Text>
 
         <Row justify="stretch">
@@ -92,222 +104,55 @@ export function AppearanceMenu() {
           </Button>
         </Row>
 
-        {/* <Row justify="stretch">
-          <Button
-            group="connected-start"
-            groupActive={state.theme.preset === "stoat"}
-            onPress={() => state.theme.setPreset("stoat")}
-          >
-            <>Callju</>
-          </Button>
-          <Button
-            group="connected-end"
-            groupActive={state.theme.preset === "you"}
-            onPress={() => state.theme.setPreset("you")}
-          >
-            <Trans>Material You</Trans>
-          </Button>
-        </Row> */}
+        {/* Tema seu.
+            Escolher uma cor aqui cria o seu tema; os prontos continuam
+            intactos, cada um com a cor que foi pensada pra ele. */}
+        <Text class="title" size="small">
+          <Trans>Fazer o meu tema</Trans>
+        </Text>
 
-        <Show when={state.theme.preset === "you"}>
-          <Row align justify wrap>
-            <IconButton
-              ref={setPickerRef}
-              variant="filled"
-              shape="square"
-              size="md"
-              onPress={() => pickerRef()?.click()}
-            >
-              <MDPalette />
-            </IconButton>
-            <input
-              ref={setPickerRef}
-              type="color"
-              value={state.theme.m3Accent ?? "#ffffff"}
-              onInput={(e) => {
-                const colour = (e.currentTarget as HTMLInputElement).value;
-                state.theme.setM3Accent(colour);
-              }}
-              style={{
-                position: "absolute",
-                opacity: 0,
-                width: "0px",
-                height: "0px",
-                padding: 0,
-                border: "none",
-              }}
-            />
-            <For
-              each={[
-                "#FF5733",
-                "#ffdc2f",
-                "#9bf088",
-                "#54ecc1",
-                "#549bec",
-                "#f2701d",
-                "#8C5FD3",
-              ]}
-            >
-              {(colour) => (
-                <Button
-                  size="md"
-                  bg={colour}
-                  group="standard"
-                  groupActive={state.theme.m3Accent === colour}
-                  onPress={() => state.theme.setM3Accent(colour)}
-                />
-                // <div
-                //   class={css({
-                //     borderRadius: "var(--borderRadius-full)",
-                //     width: "48px",
-                //     height: "48px",
-                //     cursor: "pointer",
-                //   })}
-                //   style={{ "background-color": colour }}
-                //   onClick={() => state.theme.setM3Accent(colour)}
-                // />
-              )}
-            </For>
-            {/* <div
-            class={css({
-              borderRadius: "var(--borderRadius-full)",
-              width: "48px",
-              height: "48px",
-              cursor: "pointer",
-            })}
+        <Row align gap="md">
+          <IconButton
+            ref={setPickerRef}
+            variant={state.theme.tema === "personalizado" ? "filled" : "tonal"}
+            shape="square"
+            size="md"
+            onPress={() => pickerRef()?.click()}
           >
-            <MdColorize />
-          </div> */}
-          </Row>
+            <MDPalette />
+          </IconButton>
+          <input
+            ref={setPickerRef}
+            type="color"
+            value={state.theme.m3Accent ?? "#ffffff"}
+            onInput={(e) => {
+              const colour = (e.currentTarget as HTMLInputElement).value;
+              state.theme.setM3Accent(colour);
+            }}
+            style={{
+              position: "absolute",
+              opacity: 0,
+              width: "0px",
+              height: "0px",
+              padding: 0,
+              border: "none",
+            }}
+          />
+          <Text size="small">
+            <Show
+              when={state.theme.tema === "personalizado"}
+              fallback={<Trans>Escolher uma cor e montar o meu tema</Trans>}
+            >
+              <Trans>Tema seu, na cor {state.theme.m3Accent}</Trans>
+            </Show>
+          </Text>
+        </Row>
 
-          {/* TODO: Cursed on mobile; may need to be replaced
-          with FloatingSelect / similar on small screens */}
-          <Row justify="stretch">
-            <Button
-              size="xs"
-              group="connected-start"
-              groupActive={state.theme.m3Contrast.toFixed(1) === "-1.0"}
-              onPress={() => state.theme.setM3Contrast(-1.0)}
-            >
-              <Trans>Reduced</Trans>
-            </Button>
-            <Button
-              size="xs"
-              group="connected"
-              groupActive={state.theme.m3Contrast.toFixed(1) === "0.0"}
-              onPress={() => state.theme.setM3Contrast(0)}
-            >
-              <Trans>Normal</Trans>
-            </Button>
-            <Button
-              size="xs"
-              group="connected"
-              groupActive={state.theme.m3Contrast.toFixed(1) === "0.5"}
-              onPress={() => state.theme.setM3Contrast(0.5)}
-            >
-              <Trans>More Contrast</Trans>
-            </Button>
-            <Button
-              size="xs"
-              group="connected-end"
-              groupActive={state.theme.m3Contrast.toFixed(1) === "1.0"}
-              onPress={() => state.theme.setM3Contrast(1.0)}
-            >
-              <Trans>High Contrast</Trans>
-            </Button>
-          </Row>
-
-          <Row justify="stretch">
-            <Button
-              size="xs"
-              group="connected-start"
-              groupActive={state.theme.m3Variant === "content"}
-              onPress={() => state.theme.setM3Variant("content")}
-            >
-              Callju
-            </Button>
-            <Button
-              size="xs"
-              group="connected"
-              groupActive={state.theme.m3Variant === "legacy"}
-              onPress={() => state.theme.setM3Variant("legacy")}
-            >
-              <Trans>Legacy</Trans>
-            </Button>
-            <Button
-              size="xs"
-              group="connected"
-              groupActive={state.theme.m3Variant === "monochrome"}
-              onPress={() => state.theme.setM3Variant("monochrome")}
-            >
-              <Trans>Monochrome</Trans>
-            </Button>
-            <Button
-              size="xs"
-              group="connected"
-              groupActive={state.theme.m3Variant === "neutral"}
-              onPress={() => state.theme.setM3Variant("neutral")}
-            >
-              <Trans>Neutral</Trans>
-            </Button>
-            <Button
-              size="xs"
-              group="connected"
-              groupActive={state.theme.m3Variant === "tonal_spot"}
-              onPress={() => state.theme.setM3Variant("tonal_spot")}
-            >
-              <Trans>Tonal Spot</Trans>
-            </Button>
-            {/* <Button
-            size="xs"
-            group="connected"
-            groupActive={state.theme.m3Variant === "vibrant"}
-            onPress={() => state.theme.setM3Variant("vibrant")}
-          >
-            <Trans>Vibrant</Trans>
+        <Row justify="stretch">
+          <Button variant="outlined" onPress={() => state.theme.restaurarPadrao()}>
+            <Trans>Voltar pro tema do Callju</Trans>
           </Button>
-          <Button
-            size="xs"
-            group="connected"
-            groupActive={state.theme.m3Variant === "expressive"}
-            onPress={() => state.theme.setM3Variant("expressive")}
-          >
-            <Trans>Expressive</Trans>
-          </Button>
-          <Button
-            size="xs"
-            group="connected"
-            groupActive={state.theme.m3Variant === "fidelity"}
-            onPress={() => state.theme.setM3Variant("fidelity")}
-          >
-            <Trans>Fidelity</Trans>
-          </Button>
-          <Button
-            size="xs"
-            group="connected"
-            groupActive={state.theme.m3Variant === "content"}
-            onPress={() => state.theme.setM3Variant("content")}
-          >
-            <Trans>Content</Trans>
-          </Button>
-          <Button
-            size="xs"
-            group="connected"
-            groupActive={state.theme.m3Variant === "rainbow"}
-            onPress={() => state.theme.setM3Variant("rainbow")}
-          >
-            <Trans>Rainbow</Trans>
-          </Button> */}
-            <Button
-              size="xs"
-              group="connected-end"
-              groupActive={state.theme.m3Variant === "fruit_salad"}
-              onPress={() => state.theme.setM3Variant("fruit_salad")}
-            >
-              <Trans>Fruit Salad</Trans>
-            </Button>
-          </Row>
-        </Show>
+        </Row>
       </Column>
 
       <Column>
@@ -488,5 +333,54 @@ const MessagePreview = styled("div", {
     flexDirection: "column",
     padding: "var(--gap-md)",
     gap: "var(--message-group-spacing)",
+  },
+});
+
+const Temas = styled("div", {
+  base: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+    gap: "var(--gap-sm)",
+  },
+});
+
+const CartaoTema = styled("button", {
+  base: {
+    display: "flex",
+    alignItems: "center",
+    gap: "var(--gap-sm)",
+
+    padding: "10px 12px",
+    borderRadius: "var(--borderRadius-lg)",
+    border: "1px solid var(--md-sys-color-outline-variant)",
+    background: "var(--md-sys-color-surface-container)",
+    color: "var(--md-sys-color-on-surface)",
+
+    font: "inherit",
+    fontSize: "0.9em",
+    cursor: "pointer",
+    transition: "background 150ms ease, border-color 150ms ease",
+
+    _hover: {
+      background: "var(--md-sys-color-surface-container-high)",
+    },
+  },
+  variants: {
+    escolhido: {
+      true: {
+        borderColor: "var(--callju-accent)",
+        background: "var(--callju-selecionado)",
+      },
+    },
+  },
+});
+
+const Bolinha = styled("span", {
+  base: {
+    width: "14px",
+    height: "14px",
+    borderRadius: "var(--borderRadius-full)",
+    flexShrink: 0,
+    boxShadow: "0 0 0 1px rgba(0, 0, 0, 0.35) inset",
   },
 });

@@ -189,8 +189,9 @@ const button = cva({
         "--color": "var(--md-sys-color-primary)",
       },
       filled: {
-        background: "var(--md-sys-color-primary)",
-        "--color": "var(--md-sys-color-on-primary)",
+        background: "var(--callju-destaque)",
+        "--color": "var(--callju-destaque-texto)",
+        boxShadow: "0 1px 2px rgba(0, 0, 0, 0.4)",
       },
       tonal: {
         background: "var(--md-sys-color-secondary-container)",

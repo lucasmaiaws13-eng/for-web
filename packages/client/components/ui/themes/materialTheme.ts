@@ -16,6 +16,53 @@ import {
 import { SelectedTheme, TypeTheme } from "@revolt/state/stores/Theme";
 
 /**
+ * Superficies do tema do Callju.
+ *
+ * O Material gera os cinzas a partir da cor da marca, e mesmo no esquema
+ * monocromatico eles saem lavados e com degraus largos demais. Esta escala foi
+ * escolhida a mao: preto profundo, degraus curtos entre um nivel e outro e
+ * linhas de contorno discretas, do jeito que os aplicativos escuros modernos
+ * fazem. Assim a cor da marca aparece so onde ela e destaque de verdade.
+ */
+const SUPERFICIES_ESCURAS = {
+  "surface-dim": "#08080a",
+  surface: "#0c0c0e",
+  "surface-bright": "#26262b",
+  "surface-container-lowest": "#08080a",
+  "surface-container-low": "#111113",
+  "surface-container": "#151518",
+  "surface-container-high": "#1c1c20",
+  "surface-container-highest": "#24242a",
+  "on-surface": "#ededf0",
+  "on-surface-variant": "#a3a4ab",
+  outline: "#6b6c74",
+  "outline-variant": "#2a2a30",
+  "inverse-surface": "#ededf0",
+  "inverse-on-surface": "#18181b",
+  scrim: "#000000",
+  shadow: "#000000",
+};
+
+const SUPERFICIES_CLARAS = {
+  "surface-dim": "#dedee2",
+  surface: "#fbfbfc",
+  "surface-bright": "#ffffff",
+  "surface-container-lowest": "#ffffff",
+  "surface-container-low": "#f5f5f7",
+  "surface-container": "#efeff2",
+  "surface-container-high": "#e9e9ed",
+  "surface-container-highest": "#e3e3e8",
+  "on-surface": "#17171a",
+  "on-surface-variant": "#55565d",
+  outline: "#85868d",
+  "outline-variant": "#d5d5db",
+  "inverse-surface": "#2b2b30",
+  "inverse-on-surface": "#f2f2f5",
+  scrim: "#000000",
+  shadow: "#000000",
+};
+
+/**
  * Generate the Material variables from the given properties
  *
  * Currently only generates color keys
@@ -194,7 +241,7 @@ function generateMaterialYouScheme(
   const superficie =
     variant === "caju" || variant === "legacy" ? scheme : neutro;
 
-  return {
+  const cores = {
     primary: hexFromArgb(scheme.primary),
     "on-primary": hexFromArgb(scheme.onPrimary),
     "primary-container": hexFromArgb(scheme.primaryContainer),
@@ -246,5 +293,13 @@ function generateMaterialYouScheme(
 
     scrim: hexFromArgb(superficie.scrim),
     shadow: hexFromArgb(superficie.shadow),
+  };
+
+  // O Legacy fica exatamente como era. Todo o resto usa a escala propria.
+  if (variant === "caju" || variant === "legacy") return cores;
+
+  return {
+    ...cores,
+    ...(darkMode ? SUPERFICIES_ESCURAS : SUPERFICIES_CLARAS),
   };
 }

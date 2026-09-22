@@ -203,8 +203,10 @@ const base = cva({
         background: "transparent",
       },
       selected: {
-        "--color": "var(--md-sys-color-on-primary-container)",
-        background: "var(--md-sys-color-primary-container)",
+        // Selecao discreta: um degrau de cinza e o texto na cor da marca.
+        // Pintar a linha inteira de laranja gritava na tela.
+        "--color": "var(--callju-accent-claro)",
+        background: "var(--callju-selecionado)",
       },
     },
   },
