@@ -63,6 +63,20 @@ export default function Notifications(props: { isDesktop: boolean }) {
               <Trans>Enable Push Notifications</Trans>
             </CategoryButton>
           </Show>
+          <CategoryButton
+            action={<Checkbox checked={settings.avisarChamadas} />}
+            onClick={() => (settings.avisarChamadas = !settings.avisarChamadas)}
+            icon={<MdNotifications {...iconSize(22)} />}
+            description={
+              <Trans>
+                Avisar quando alguém começa uma call num canal de voz. O aviso
+                espera a chamada durar um pouco e não repete o mesmo canal
+                seguidas vezes.
+              </Trans>
+            }
+          >
+            <Trans>Avisar quando começa uma call</Trans>
+          </CategoryButton>
         </CategoryButton.Group>
       </Column>
       <Sounds />

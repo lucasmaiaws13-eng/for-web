@@ -492,14 +492,10 @@ function Entry(
     <Column gap="sm">
       <MenuButton
         href={`/server/${props.channel.serverId}/channel/${props.channel.id}`}
-        // Clique duplo no nome entra na chamada, como no Discord.
-        //
-        // O clique simples segue apenas navegando, de proposito: passear pelos
-        // canais nao pode jogar ninguem dentro de uma call sem querer. Entrar
-        // precisa ser um gesto deliberado, e o clique duplo e isso.
-        onDblClick={() => {
+        // Um clique no canal de voz ja entra na chamada.
+        onClick={() => {
           // Ja estar dentro nao reconecta: connect() chama disconnect antes,
-          // entao um clique duplo distraido derrubaria a propria chamada.
+          // entao um clique distraido derrubaria a propria chamada.
           if (!props.channel.isVoice || inCall()) return;
 
           voice.connect(props.channel);

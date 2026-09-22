@@ -274,6 +274,16 @@ class Voice {
 
     this.device.setWakeLocked();
 
+    // O som de entrada tocava quando a conexao fechava, alguns segundos depois
+    // do clique. Ate la o clique parecia nao ter funcionado. Agora ele toca na
+    // hora, so pra quem entrou; quem ja esta na sala continua ouvindo pelo
+    // aviso de participante novo.
+    this.sound.playSound("userJoinVoice");
+
+    const comecou = performance.now();
+    const marcar = (etapa: string) =>
+      console.info(`[callju] entrar na call: ${etapa} em ${Math.round(performance.now() - comecou)} ms`);
+
     const room = new Room({
       audioCaptureDefaults: {
         deviceId: this.#settings.preferredAudioInputDevice,
@@ -354,7 +364,7 @@ class Voice {
           this.screenShareTracks.add(screenShareTrack.trackSid);
         }
       }
-      this.sound.playSound("userJoinVoice");
+      // O som de entrada ja tocou no clique, la em cima
       this.#relerSurdos();
       this.avisarSurdez();
     });
@@ -427,22 +437,41 @@ class Voice {
       }
     });
 
-    // Gather latency
-    const selected = await Promise.any(
-      this.config.features.livekit.nodes.map(async (node) => {
-        return fetch(node.public_url.replace("wss", "https")).then(() => {
-          return node.name;
-        });
-      }),
-    );
+    // Escolha do servidor de voz.
+    //
+    // A medicao de latencia batia em cada servidor antes de qualquer outra
+    // coisa, e so depois pedia a entrada. Com um servidor so, que e o nosso
+    // caso, isso era uma ida e volta inteira de espera pra escolher o unico
+    // candidato. Com varios ela continua valendo.
+    const nos = this.config.features.livekit.nodes;
+    const selected =
+      nos.length === 1
+        ? nos[0].name
+        : await Promise.any(
+            nos.map(async (node) =>
+              fetch(node.public_url.replace("wss", "https")).then(
+                () => node.name,
+              ),
+            ),
+          );
+    marcar("servidor escolhido");
+
+    // Adianta DNS, TLS e o aperto de mao enquanto o pedido de entrada vai e
+    // volta, em vez de fazer tudo isso depois.
+    const enderecos = nos.filter((node) => node.name === selected);
+    if (enderecos.length) {
+      room.prepareConnection(enderecos[0].public_url);
+    }
 
     if (!auth) {
       auth = await channel.joinCall(selected);
+      marcar("entrada autorizada");
     }
 
     await room.connect(auth.url, auth.token, {
       autoSubscribe: false,
     });
+    marcar("conectado");
   }
 
   disconnect() {

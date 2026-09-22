@@ -10,6 +10,7 @@ import { IconButton } from "@revolt/ui/components/design";
 import { Symbol } from "@revolt/ui/components/utils/Symbol";
 import { scrollableStyles } from "@revolt/ui/directives";
 
+import { EsperandoConexao } from "./EsperandoConexao";
 import { ParticipantTile, tile } from "./ParticipantTile";
 import { VoiceCallCardActions } from "./VoiceCallCardActions";
 import { VoiceCallCardStatus } from "./VoiceCallCardStatus";
@@ -135,6 +136,10 @@ function Participants() {
 
   return (
     <Call ref={callRef} class={voice.focusId() ? "" : scrollableStyles()}>
+      {/* Enquanto a conexao nao fecha, a pessoa ja se ve na chamada */}
+      <Show when={voice.state() !== "CONNECTED"}>
+        <EsperandoConexao />
+      </Show>
       <InRoom>
         <FocusedParticipant />
         <Show when={voice.focusId()}>

@@ -39,6 +39,11 @@ interface SettingsDefinition {
   "notifications:push": NotificationPermissionState;
 
   /**
+   * Avisar quando uma call comeca num canal de voz
+   */
+  "notifications:chamadas": boolean;
+
+  /**
    * Selected unicode emoji
    */
   "appearance:unicode_emoji": UnicodeEmojiPacks;
@@ -103,6 +108,7 @@ type ValueType<T extends keyof SettingsDefinition> =
 const EXPECTED_TYPES: { [K in keyof SettingsDefinition]: ValueType<K> } = {
   "notifications:desktop": "string",
   "notifications:push": "string",
+  "notifications:chamadas": "boolean",
   "appearance:unicode_emoji": "string",
   "appearance:show_send_button": "boolean",
   "appearance:compact_mode": "boolean",
@@ -146,6 +152,7 @@ export class Settings extends AbstractStore<"settings", TypeSettings> {
     return {
       "notifications:desktop": "default",
       "notifications:push": "default",
+      "notifications:chamadas": true,
       "appearance:unicode_emoji": "fluent-3d",
       "appearance:show_send_button": true,
       "appearance:compact_mode": false,
@@ -213,6 +220,20 @@ export class Settings extends AbstractStore<"settings", TypeSettings> {
    */
   get desktopNotificationsState(): NotificationPermissionState {
     return this.getValue("notifications:desktop") ?? "default";
+  }
+
+  /**
+   * Avisar quando uma call comeca
+   */
+  get avisarChamadas(): boolean {
+    return this.getValue("notifications:chamadas") ?? true;
+  }
+
+  /**
+   * Ligar ou desligar o aviso de call
+   */
+  set avisarChamadas(valor: boolean) {
+    this.setValue("notifications:chamadas", valor);
   }
 
   /**
