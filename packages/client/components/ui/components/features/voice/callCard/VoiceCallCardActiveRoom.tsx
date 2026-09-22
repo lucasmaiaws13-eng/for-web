@@ -21,19 +21,33 @@ import { VoiceCallCardStatus } from "./VoiceCallCardStatus";
 export function VoiceCallCardActiveRoom() {
   const voice = useVoice();
   const collapsed = createMemo(() => voice.layout() === "collapsed");
+  const telaCheia = createMemo(() => voice.layout() === "fullscreen");
 
   return (
-    <View collapsed={collapsed()}>
+    <View collapsed={collapsed()} fullscreen={telaCheia()}>
       <Participants />
-      <VoiceCallControls>
-        <VoiceCallControlHolder left collapsed={collapsed()}>
-          <VoiceCallCardStatus />
-        </VoiceCallControlHolder>
-        <VoiceCallCardActions size="sm" />
-        <VoiceCallControlHolder right collapsed={collapsed()}>
+      <Show
+        when={telaCheia()}
+        fallback={
+          <VoiceCallControls>
+            <VoiceCallControlHolder left collapsed={collapsed()}>
+              <VoiceCallCardStatus />
+            </VoiceCallControlHolder>
+            <VoiceCallCardActions size="sm" />
+            <VoiceCallControlHolder right collapsed={collapsed()}>
+              <LayoutButtons />
+            </VoiceCallControlHolder>
+          </VoiceCallControls>
+        }
+      >
+        {/* Em tela cheia o video ocupa tudo e os botoes ficam por cima,
+            apagados ate o mouse chegar perto. Nada de faixa preta roubando
+            altura da imagem. */}
+        <ControlesFlutuantes>
+          <VoiceCallCardActions size="sm" />
           <LayoutButtons />
-        </VoiceCallControlHolder>
-      </VoiceCallControls>
+        </ControlesFlutuantes>
+      </Show>
     </View>
   );
 }
@@ -142,7 +156,7 @@ function Participants() {
       </Show>
       <InRoom>
         <FocusedParticipant />
-        <Show when={voice.focusId()}>
+        <Show when={voice.focusId() && voice.layout() !== "collapsed"}>
           <ShowBarButtonHolder>
             <div style={{ "margin-bottom": "10px" }}>
               <IconButton
@@ -211,6 +225,7 @@ function FocusedParticipant() {
 
 const View = styled("div", {
   base: {
+    position: "relative",
     minHeight: 0,
     height: "100%",
     width: "100%",
@@ -225,6 +240,34 @@ const View = styled("div", {
   variants: {
     collapsed: {
       true: { padding: 0 },
+    },
+    fullscreen: {
+      true: {
+        padding: 0,
+        gap: 0,
+        background: "#000",
+      },
+    },
+  },
+});
+
+const ControlesFlutuantes = styled("div", {
+  base: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: "var(--gap-lg)",
+
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: "var(--gap-md)",
+
+    zIndex: 10,
+    opacity: 0.25,
+    transition: "opacity var(--transitions-medium)",
+    _hover: {
+      opacity: 1,
     },
   },
 });

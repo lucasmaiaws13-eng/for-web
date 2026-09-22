@@ -310,6 +310,15 @@ export const tile = cva({
   },
   compoundVariants: [
     {
+      // Ocupando a tela inteira, canto arredondado e fundo so atrapalham
+      focus: [true],
+      fullscreen: [true],
+      css: {
+        borderRadius: 0,
+        background: "transparent",
+      },
+    },
+    {
       video: [false],
       focus: [true],
       css: {
