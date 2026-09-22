@@ -26,8 +26,8 @@ export function createStoatWebVariables(theme: SelectedTheme) {
     "--effects-invert-light": theme.darkMode ? "invert(0%)" : "invert(1000%)",
 
     // transitions
-    "--transitions-fast": ".1s ease-in-out",
-    "--transitions-medium": ".2s ease",
+    "--transitions-fast": "140ms cubic-bezier(0.3, 0, 0, 1)",
+    "--transitions-medium": "240ms cubic-bezier(0.2, 0, 0, 1)",
 
     // brand
     "--brand-presence-online": "#3ABF7E",

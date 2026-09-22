@@ -209,7 +209,9 @@ const Float = styled("div", {
     position: "fixed",
     zIndex: 10,
     pointerEvents: "none",
-    transition: "all .3s cubic-bezier(1, 0, 0, 1)",
+    // A janela da call passeia pela tela ao trocar de canto ou de tamanho:
+    // curva que sai rapido e encosta devagar, sem a freada seca de antes
+    transition: "all var(--mov-entrada)",
     height: "40vh",
     touchAction: "none",
   },
@@ -348,7 +350,9 @@ const Card = styled("div", {
     transitionTimingFunction: "ease-in-out",
 
     borderRadius: "var(--borderRadius-lg)",
-    background: "var(--md-sys-color-secondary-container)",
+    background: "var(--md-sys-color-surface-container)",
+    border: "1px solid var(--md-sys-color-outline-variant)",
+    boxShadow: "0 10px 30px rgba(0, 0, 0, 0.35)",
   },
   variants: {
     active: {

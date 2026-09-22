@@ -387,26 +387,41 @@ const entryContainer = cva({
     flexShrink: 0,
     placeItems: "center",
 
+    // A barrinha do lado estica com um empurraozinho alem do ponto, que e o
+    // que faz ela parecer viva em vez de so aparecer
     "&:before": {
       content: "' '",
       position: "absolute",
-      width: "12px",
+      width: "4px",
       height: "0px",
-      transition: "var(--transitions-fast) all",
-      left: "-8px",
-      borderRadius: "4px",
+      transition: "height var(--mov-elastico), background var(--mov-estado)",
+      left: "-4px",
+      borderRadius: "99px",
       background: "var(--md-sys-color-on-surface)",
     },
 
     "&:hover:before": {
       height: "16px",
     },
+
+    "& > *": {
+      transition: "transform var(--mov-toque)",
+    },
+
+    "&:hover > *": {
+      transform: "scale(1.06)",
+    },
+
+    "&:active > *": {
+      transform: "scale(0.96)",
+    },
   },
   variants: {
     indicator: {
       selected: {
         "&:before": {
-          height: "32px !important",
+          height: "28px !important",
+          background: "var(--callju-accent) !important",
         },
       },
       alert: {

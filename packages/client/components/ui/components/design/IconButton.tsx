@@ -89,10 +89,23 @@ const iconButton2 = cva({
 
     cursor: "pointer",
     border: "none",
-    transition: "var(--transitions-fast) all",
+    transition:
+      "background var(--mov-toque), color var(--mov-toque), transform var(--mov-toque), box-shadow var(--mov-toque)",
 
     color: "var(--colour)",
     fill: "var(--colour)",
+
+    _hover: {
+      transform: "scale(1.07)",
+    },
+
+    "&:active": {
+      transform: "scale(0.93)",
+    },
+
+    "&:disabled": {
+      transform: "none",
+    },
   },
   variants: {
     variant: {

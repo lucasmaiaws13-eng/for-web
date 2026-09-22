@@ -103,6 +103,17 @@ const Base = styled("div", {
     display: "flex",
     background: "var(--md-sys-color-surface-container-high)",
     color: "var(--md-sys-color-on-surface)",
+
+    // A caixa acende de leve quando esta escrevendo. E o unico lugar da tela
+    // onde a atencao esta o tempo todo, entao merece a marca por perto.
+    border: "1px solid transparent",
+    transition:
+      "border-color var(--mov-estado), background var(--mov-estado)",
+
+    "&:focus-within": {
+      borderColor: "var(--callju-accent-line)",
+      background: "var(--md-sys-color-surface-container-highest)",
+    },
   },
   variants: {
     hasActionsAppend: {

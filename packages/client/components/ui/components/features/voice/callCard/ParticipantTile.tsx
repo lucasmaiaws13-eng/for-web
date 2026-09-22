@@ -272,7 +272,8 @@ export const tile = cva({
   base: {
     display: "grid",
     aspectRatio: "16/9",
-    transition: "all .3s ease, width 0s, height 0s",
+    transition:
+      "outline-color var(--mov-toque), background var(--mov-estado), transform var(--mov-estado), box-shadow var(--mov-estado), width 0s, height 0s",
     borderRadius: "var(--borderRadius-lg)",
     width: "var(--vc-tile-width)",
     maxWidth: "calc(var(--vc-h) * 16 / 9)",

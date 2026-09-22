@@ -162,6 +162,18 @@ const base = cva({
     color: "var(--color)",
     fill: "var(--color)",
 
+    transition:
+      "background var(--mov-toque), color var(--mov-estado), transform var(--mov-toque)",
+
+    _hover: {
+      background: "var(--callju-hover)",
+    },
+
+    // Afundar de leve no clique: o item responde antes mesmo da tela mudar
+    "&:active": {
+      transform: "scale(0.985)",
+    },
+
     "& > svg": {
       alignSelf: "center",
     },

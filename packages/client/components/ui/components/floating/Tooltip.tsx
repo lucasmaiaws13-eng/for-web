@@ -9,10 +9,15 @@ import { typography } from "../design";
  */
 export const TooltipBase = styled("div", {
   base: {
-    color: "white",
-    background: "black",
-    padding: "var(--gap-md)",
+    color: "var(--md-sys-color-on-surface)",
+    background: "var(--md-sys-color-surface-container-highest)",
+    border: "1px solid var(--md-sys-color-outline-variant)",
+    boxShadow: "0 6px 20px rgba(0, 0, 0, 0.45)",
+    padding: "6px 10px",
     borderRadius: "var(--borderRadius-md)",
+
+    // Aparece subindo um tiquinho, em vez de simplesmente piscar na tela
+    animation: "callju-dica var(--mov-entrada) both",
 
     ...typography.raw({
       class: "label",

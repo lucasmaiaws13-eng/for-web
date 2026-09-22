@@ -1,32 +1,20 @@
-import { Match, Show, Switch, createSignal } from "solid-js";
+import { For, Show, createSignal, onCleanup, onMount } from "solid-js";
 
 import { Trans } from "@lingui/solid/macro";
-import { css, cva } from "styled-system/css";
+import { cva } from "styled-system/css";
 import { styled } from "styled-system/jsx";
 
 import { IS_DEV, useClient } from "@revolt/client";
-import { useInstance } from "@revolt/instance";
 import { useModals } from "@revolt/modal";
 import { useNavigate } from "@revolt/routing";
-import {
-  Button,
-  CategoryButton,
-  Column,
-  Header,
-  iconSize,
-  main,
-} from "@revolt/ui";
+import { useState } from "@revolt/state";
+import { Button, Header, iconSize, main } from "@revolt/ui";
+import { Symbol } from "@revolt/ui/components/utils/Symbol";
 
-import MdAddCircle from "@material-design-icons/svg/filled/add_circle.svg?component-solid";
-import MdFavorite from "@material-design-icons/svg/filled/favorite.svg?component-solid";
-import MdGroups3 from "@material-design-icons/svg/filled/groups_3.svg?component-solid";
-import MdHelpCenter from "@material-design-icons/svg/filled/help_center.svg?component-solid";
 import MdHome from "@material-design-icons/svg/filled/home.svg?component-solid";
-import MdSettings from "@material-design-icons/svg/filled/settings.svg?component-solid";
 
-
-import { HeaderIcon } from "./common/CommonHeader";
 import { AppModal, AvisoModal, GuiaModal, PixModal } from "./CalljuModals";
+import { HeaderIcon } from "./common/CommonHeader";
 
 // >>> TROQUE AQUI pela sua chave Pix (CPF, telefone, email ou aleatoria)
 const CHAVE_PIX = "+5591983673239";
@@ -36,158 +24,361 @@ const CHAVE_PIX = "+5591983673239";
 // Enquanto estiver com o valor de exemplo, o botao fica escondido.
 const CONVITE_SERVIDOR = "TA4TJ57t";
 
-/**
- * Base layout of the home page (i.e. the header/background)
- */
+/** De quanto em quanto tempo o carrossel troca sozinho */
+const TEMPO_DO_SLIDE = 7000;
+
 const Base = styled("div", {
   base: {
     width: "100%",
     display: "flex",
     flexDirection: "column",
-
     color: "var(--md-sys-color-on-surface)",
   },
 });
 
-/**
- * Layout of the content as a whole
- */
 const content = cva({
   base: {
     ...main.raw(),
-
-    padding: "48px 0",
-
-    gap: "32px",
+    padding: "40px 20px 56px",
+    gap: "22px",
     alignItems: "center",
-    justifyContent: "center",
   },
 });
 
 /**
- * Layout of the buttons
+ * Painel de vidro.
+ *
+ * O desfoque com o contorno claro por cima da a impressao de uma placa de
+ * vidro sobre o fundo. Quem desligou os efeitos de transparencia nas
+ * configuracoes recebe a mesma placa em cor cheia: o desenho continua de pe,
+ * sem o custo de desfocar a tela.
  */
-const Buttons = styled("div", {
+const Vidro = styled("div", {
   base: {
-    gap: "8px",
-    padding: "8px",
-    display: "flex",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    borderRadius: "var(--borderRadius-lg)",
-
-    color: "var(--md-sys-color-on-surface-variant)",
-    background: "var(--md-sys-color-surface-variant)",
+    position: "relative",
+    overflow: "hidden",
+    borderRadius: "18px",
+    border: "1px solid rgba(255, 255, 255, 0.08)",
+    background: "rgba(255, 255, 255, 0.04)",
+    boxShadow:
+      "inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 12px 32px rgba(0, 0, 0, 0.35)",
   },
-});
-
-/**
- * Make sure the columns are separated
- */
-const SeparatedColumn = styled(Column, {
-  base: {
-    justifyContent: "stretch",
-    marginInline: "0.25em",
-    width: "260px",
-    "& > *": {
-      flexGrow: 1,
+  variants: {
+    desfoque: {
+      true: {
+        backdropFilter: "blur(18px) saturate(1.2)",
+      },
+      false: {
+        background: "var(--md-sys-color-surface-container)",
+      },
     },
   },
 });
 
-/**
- * Cartao de acao da tela inicial.
- *
- * Titulo e descricao usam pesos, tamanhos e opacidades bem distintos
- * de proposito: e o que cria hierarquia sem precisar de outra familia
- * tipografica.
- */
-function CartaoAcao(props: {
-  emoji: string;
+/* ------------------------------------------------------------------ */
+/* Carrossel                                                           */
+/* ------------------------------------------------------------------ */
+
+type Slide = {
+  etiqueta: string;
   titulo: string;
   texto: string;
-  onClick: () => void;
-  destaque?: boolean;
-}) {
-  return (
-    <button
-      class="callju-lift"
-      onClick={props.onClick}
-      style={{
-        display: "flex",
-        "align-items": "center",
-        gap: "13px",
-        padding: "14px 15px",
-        "border-radius": "14px",
-        cursor: "pointer",
-        "text-align": "start",
-        color: "var(--md-sys-color-on-surface)",
-        background: "var(--md-sys-color-surface-container-high)",
-        border: props.destaque
-          ? "1px solid var(--callju-accent-line)"
-          : "1px solid transparent",
-      }}
-    >
-      <span
-        style={{
-          width: "36px",
-          height: "36px",
-          "flex-shrink": "0",
-          display: "flex",
-          "align-items": "center",
-          "justify-content": "center",
-          "border-radius": "10px",
-          "font-size": "1.05em",
-          background: props.destaque
-            ? "var(--callju-accent-soft)"
-            : "var(--md-sys-color-surface-variant)",
-        }}
-      >
-        {props.emoji}
-      </span>
+  icone: string;
+  aoClicar: () => void;
+};
 
-      <span style={{ "min-width": "0" }}>
-        <span
-          style={{
-            display: "block",
-            "font-size": "0.95em",
-            "font-weight": "650",
-            "letter-spacing": "-0.005em",
-          }}
-        >
-          {props.titulo}
-        </span>
-        <span
-          style={{
-            display: "block",
-            "font-size": "0.8em",
-            "font-weight": "400",
-            opacity: "0.5",
-            "margin-top": "2px",
-            "line-height": "1.35",
-          }}
-        >
-          {props.texto}
-        </span>
-      </span>
-    </button>
+/**
+ * Carrossel das novidades.
+ *
+ * A home antiga empilhava aviso, banner, botao e quatro cartoes, e tudo pedia
+ * atencao ao mesmo tempo. Aqui as novidades se revezam num lugar so: uma de
+ * cada vez, trocando sozinha, com as bolinhas pra quem quiser ir direto.
+ * Passar o mouse segura o slide, porque ler importa mais que o relogio.
+ */
+function Carrossel(props: { slides: Slide[]; desfoque: boolean }) {
+  const [atual, setAtual] = createSignal(0);
+  const [parado, setParado] = createSignal(false);
+
+  onMount(() => {
+    const relogio = setInterval(() => {
+      if (!parado()) setAtual((i) => (i + 1) % props.slides.length);
+    }, TEMPO_DO_SLIDE);
+    onCleanup(() => clearInterval(relogio));
+  });
+
+  return (
+    <Vidro
+      desfoque={props.desfoque}
+      style={{ width: "100%", "max-width": "560px" }}
+      onMouseEnter={() => setParado(true)}
+      onMouseLeave={() => setParado(false)}
+    >
+      <Trilho style={{ transform: `translateX(-${atual() * 100}%)` }}>
+        <For each={props.slides}>
+          {(slide) => (
+            <SlideBase onClick={slide.aoClicar}>
+              <Icone>
+                <Symbol size={26}>{slide.icone}</Symbol>
+              </Icone>
+
+              <span style={{ flex: "1", "min-width": "0" }}>
+                <Etiqueta>{slide.etiqueta}</Etiqueta>
+                <Titulo>{slide.titulo}</Titulo>
+                <Texto>{slide.texto}</Texto>
+              </span>
+
+              <Seta>
+                <Symbol size={20}>chevron_right</Symbol>
+              </Seta>
+            </SlideBase>
+          )}
+        </For>
+      </Trilho>
+
+      <Bolinhas>
+        <For each={props.slides}>
+          {(slide, i) => (
+            <Bolinha
+              ativa={atual() === i()}
+              aria-label={slide.titulo}
+              onClick={() => setAtual(i())}
+            />
+          )}
+        </For>
+      </Bolinhas>
+    </Vidro>
   );
 }
 
-/**
- * Home page
- */
+const Trilho = styled("div", {
+  base: {
+    display: "flex",
+    transition: "transform var(--mov-entrada)",
+  },
+});
+
+const SlideBase = styled("button", {
+  base: {
+    flex: "0 0 100%",
+    display: "flex",
+    alignItems: "center",
+    gap: "16px",
+
+    padding: "22px 22px 28px",
+    border: "none",
+    background: "transparent",
+    color: "var(--md-sys-color-on-surface)",
+    textAlign: "start",
+    font: "inherit",
+    cursor: "pointer",
+
+    transition: "background var(--mov-toque)",
+    _hover: {
+      background: "rgba(255, 255, 255, 0.03)",
+    },
+  },
+});
+
+const Icone = styled("span", {
+  base: {
+    width: "46px",
+    height: "46px",
+    flexShrink: 0,
+    display: "grid",
+    placeItems: "center",
+    borderRadius: "14px",
+    color: "#ffe6d2",
+    background: "var(--callju-destaque)",
+    boxShadow: "0 4px 14px rgba(0, 0, 0, 0.35)",
+  },
+});
+
+const Etiqueta = styled("span", {
+  base: {
+    display: "block",
+    fontSize: "0.68em",
+    letterSpacing: "0.14em",
+    textTransform: "uppercase",
+    color: "var(--callju-accent-claro)",
+  },
+});
+
+const Titulo = styled("span", {
+  base: {
+    display: "block",
+    marginTop: "4px",
+    fontSize: "1.05em",
+    fontWeight: 700,
+    letterSpacing: "-0.01em",
+  },
+});
+
+const Texto = styled("span", {
+  base: {
+    display: "block",
+    marginTop: "3px",
+    fontSize: "0.86em",
+    opacity: 0.55,
+    lineHeight: 1.4,
+  },
+});
+
+const Seta = styled("span", {
+  base: {
+    flexShrink: 0,
+    display: "grid",
+    placeItems: "center",
+    opacity: 0.4,
+    transition: "transform var(--mov-toque), opacity var(--mov-toque)",
+
+    "button:hover &": {
+      opacity: 0.9,
+      transform: "translateX(3px)",
+    },
+  },
+});
+
+const Bolinhas = styled("div", {
+  base: {
+    position: "absolute",
+    bottom: "12px",
+    left: 0,
+    right: 0,
+    display: "flex",
+    justifyContent: "center",
+    gap: "6px",
+  },
+});
+
+const Bolinha = styled("button", {
+  base: {
+    width: "6px",
+    height: "6px",
+    padding: 0,
+    border: "none",
+    cursor: "pointer",
+    borderRadius: "99px",
+    background: "rgba(255, 255, 255, 0.22)",
+    transition: "width var(--mov-elastico), background var(--mov-estado)",
+  },
+  variants: {
+    ativa: {
+      true: {
+        width: "18px",
+        background: "var(--callju-accent)",
+      },
+    },
+  },
+});
+
+/* ------------------------------------------------------------------ */
+/* Atalhos                                                             */
+/* ------------------------------------------------------------------ */
+
+const Atalhos = styled("div", {
+  base: {
+    width: "100%",
+    maxWidth: "560px",
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+    gap: "10px",
+  },
+});
+
+const Atalho = styled("button", {
+  base: {
+    display: "flex",
+    alignItems: "center",
+    gap: "11px",
+
+    padding: "13px 14px",
+    borderRadius: "14px",
+    border: "1px solid var(--md-sys-color-outline-variant)",
+    background: "var(--md-sys-color-surface-container)",
+    color: "var(--md-sys-color-on-surface)",
+
+    font: "inherit",
+    fontSize: "0.88em",
+    fontWeight: 600,
+    textAlign: "start",
+    cursor: "pointer",
+
+    transition:
+      "background var(--mov-toque), border-color var(--mov-toque), transform var(--mov-toque)",
+
+    _hover: {
+      background: "var(--md-sys-color-surface-container-high)",
+      borderColor: "rgba(255, 255, 255, 0.12)",
+      transform: "translateY(-2px)",
+    },
+
+    "&:active": {
+      transform: "translateY(0)",
+    },
+  },
+});
+
+const IconeAtalho = styled("span", {
+  base: {
+    width: "32px",
+    height: "32px",
+    flexShrink: 0,
+    display: "grid",
+    placeItems: "center",
+    borderRadius: "10px",
+    color: "var(--callju-accent-claro)",
+    background: "var(--callju-hover)",
+  },
+});
+
+/* ------------------------------------------------------------------ */
+/* Pagina                                                              */
+/* ------------------------------------------------------------------ */
+
 export function HomePage() {
   const { openModal } = useModals();
   const navigate = useNavigate();
   const client = useClient();
-  const instance = useInstance();
+  const state = useState();
 
   const [guiaAberto, setGuiaAberto] = createSignal(false);
   const [pixAberto, setPixAberto] = createSignal(false);
   const [appAberto, setAppAberto] = createSignal(false);
   const [avisoAberto, setAvisoAberto] = createSignal(false);
-  const conviteConfigurado = CONVITE_SERVIDOR !== "cole-o-codigo-do-convite-aqui";
+
+  const conviteConfigurado =
+    CONVITE_SERVIDOR !== "cole-o-codigo-do-convite-aqui";
+
+  const slides: Slide[] = [
+    {
+      etiqueta: "novidade",
+      titulo: "Callju pro computador",
+      texto: "Sem aba de navegador perdida, e se atualiza sozinho",
+      icone: "desktop_windows",
+      aoClicar: () => setAppAberto(true),
+    },
+    {
+      etiqueta: "minigames",
+      titulo: "Palavras cruzadas do dia",
+      texto: "Uma grade nova por dia, sozinho ou em equipe, com ranking",
+      icone: "sports_esports",
+      aoClicar: () => navigate("/minigames"),
+    },
+    {
+      etiqueta: "em fase de testes",
+      titulo: "O Callju é nosso canto na internet",
+      texto: "Feito por um amigo, sem anúncio e sem dono. Veja como funciona",
+      icone: "favorite",
+      aoClicar: () => setAvisoAberto(true),
+    },
+    {
+      etiqueta: "apoie",
+      titulo: "Me ajude a manter no ar",
+      texto: "O servidor tem custo todo mês e sai do bolso do Lucas",
+      icone: "volunteer_activism",
+      aoClicar: () => setPixAberto(true),
+    },
+  ];
 
   return (
     <Base>
@@ -197,175 +388,18 @@ export function HomePage() {
         </HeaderIcon>
         <Trans>Home</Trans>
       </Header>
+
       <div use:scrollable={{ class: content() }}>
-        <div
-          class="callju-rise"
-          style={{
-            display: "flex",
-            "align-items": "center",
-            "justify-content": "center",
-            gap: "10px",
-            "flex-wrap": "wrap",
-          }}
-        >
-          <button
-            onClick={() => setAvisoAberto(true)}
-            class="callju-lift"
-            style={{
-              display: "flex",
-              "align-items": "center",
-              gap: "9px",
-              padding: "9px 16px",
-              "border-radius": "99px",
-              cursor: "pointer",
-              "font-size": "0.82em",
-              "font-weight": "600",
-              "letter-spacing": "0.01em",
-              color: "var(--callju-accent)",
-              background: "var(--callju-accent-soft)",
-              border: "1px solid var(--callju-accent-line)",
-            }}
-          >
-            <span
-              class="callju-speaking"
-              style={{
-                width: "7px",
-                height: "7px",
-                "border-radius": "99px",
-                background: "var(--callju-accent)",
-              }}
-            />
-            Em fase de testes
-          </button>
+        <Brilho />
 
-          <span
-            class="callju-speaking"
-            style={{
-              "font-size": "0.8em",
-              opacity: "0.55",
-              "font-style": "italic",
-            }}
-          >
-            clique aqui!
+        {/* Marca menor do que era: ela apresenta a casa, nao ocupa a casa */}
+        <Marca class="callju-rise">
+          <img src="/assets/web/callju-marca.png" alt="" />
+          <span>
+            <span class="callju-wordmark">Callju</span>
+            <small>call + caju</small>
           </span>
-        </div>
-
-        <div style={{ "text-align": "center" }}>
-          {/* O emoji fica FORA do elemento com degrade: dentro dele o
-              background-clip nao pinta elementos filhos, e o filho ainda
-              herda color:transparent, o que deixava o emoji invisivel. */}
-          <div
-            style={{
-              display: "flex",
-              "align-items": "center",
-              "justify-content": "center",
-              gap: "0.22em",
-              "font-size": "2.6em",
-              "font-weight": "800",
-              "line-height": "1.1",
-            }}
-          >
-            <img
-                  src="/assets/web/callju-marca.png"
-                  alt=""
-                  style={{
-                    width: "1.1em",
-                    height: "1.1em",
-
-                    transform: "translateY(-0.02em)",
-                  }}
-                />
-            <span
-              class="callju-wordmark"
-              style={{ "letter-spacing": "-0.035em" }}
-            >
-              Callju
-            </span>
-          </div>
-          <div
-            style={{
-              "font-size": "0.7em",
-              "letter-spacing": "0.26em",
-              "text-transform": "uppercase",
-              opacity: "0.38",
-              "margin-top": "8px",
-            }}
-          >
-            call + caju
-          </div>
-        </div>
-
-        {/* Banner do app.
-            Fica acima do botao de entrar no servidor de proposito: e a
-            novidade, e novidade so funciona se for vista. Quando o app deixar
-            de ser novidade, isto volta a ser so o cartao la embaixo. */}
-        <button
-          class="callju-lift callju-rise"
-          onClick={() => setAppAberto(true)}
-          style={{
-            width: "100%",
-            "max-width": "540px",
-            padding: "14px 18px",
-            display: "flex",
-            "align-items": "center",
-            gap: "14px",
-            "text-align": "start",
-            cursor: "pointer",
-            "border-radius": "14px",
-            border: "1px solid var(--callju-accent-line)",
-            background: "var(--callju-accent-soft)",
-          }}
-        >
-          <span
-            style={{
-              width: "38px",
-              height: "38px",
-              "flex-shrink": "0",
-              display: "flex",
-              "align-items": "center",
-              "justify-content": "center",
-              "border-radius": "10px",
-              "font-size": "1.15em",
-              background: "var(--callju-grad)",
-            }}
-          >
-            🖥️
-          </span>
-
-          <span style={{ flex: "1", "min-width": "0" }}>
-            <span
-              style={{
-                display: "block",
-                "font-size": "0.98em",
-                "font-weight": "700",
-                "letter-spacing": "-0.01em",
-                color: "var(--callju-accent)",
-              }}
-            >
-              Agora em app! Faça o download
-            </span>
-            <span
-              style={{
-                display: "block",
-                "font-size": "0.84em",
-                opacity: "0.6",
-                "margin-top": "2px",
-              }}
-            >
-              Sem aba de navegador, e se atualiza sozinho
-            </span>
-          </span>
-
-          <span
-            style={{
-              "flex-shrink": "0",
-              "font-size": "1.15em",
-              color: "var(--callju-accent)",
-            }}
-          >
-            &rsaquo;
-          </span>
-        </button>
+        </Marca>
 
         <Show when={conviteConfigurado}>
           <button
@@ -373,35 +407,20 @@ export function HomePage() {
             onClick={() => navigate(`/invite/${CONVITE_SERVIDOR}`)}
             style={{
               width: "100%",
-              "max-width": "540px",
-              padding: "16px 18px",
+              "max-width": "560px",
+              padding: "15px 20px",
               display: "flex",
               "align-items": "center",
-              gap: "16px",
+              gap: "14px",
               "text-align": "start",
             }}
           >
-            <span
-              style={{
-                width: "42px",
-                height: "42px",
-                "flex-shrink": "0",
-                display: "flex",
-                "align-items": "center",
-                "justify-content": "center",
-                "border-radius": "99px",
-                "font-size": "1.25em",
-                background: "rgba(255, 255, 255, 0.18)",
-              }}
-            >
-              🎧
-            </span>
-
+            <Symbol size={22}>headset_mic</Symbol>
             <span style={{ flex: "1", "min-width": "0" }}>
               <span
                 style={{
                   display: "block",
-                  "font-size": "1.06em",
+                  "font-size": "1.02em",
                   "font-weight": "700",
                   "letter-spacing": "-0.01em",
                 }}
@@ -411,74 +430,53 @@ export function HomePage() {
               <span
                 style={{
                   display: "block",
-                  "font-size": "0.86em",
-                  "font-weight": "400",
+                  "font-size": "0.84em",
                   opacity: "0.85",
-                  "margin-top": "3px",
+                  "margin-top": "2px",
                 }}
               >
                 pra conversar com a galera é por aqui
               </span>
             </span>
-
-            <span
-              style={{
-                width: "30px",
-                height: "30px",
-                "flex-shrink": "0",
-                display: "flex",
-                "align-items": "center",
-                "justify-content": "center",
-                "border-radius": "99px",
-                "font-size": "1.15em",
-                background: "rgba(255, 255, 255, 0.18)",
-              }}
-            >
-              &rsaquo;
-            </span>
+            <Symbol size={20}>chevron_right</Symbol>
           </button>
         </Show>
 
-        <div
-          style={{
-            width: "100%",
-            "max-width": "540px",
-            display: "grid",
-            "grid-template-columns": "repeat(auto-fit, minmax(240px, 1fr))",
-            gap: "10px",
-          }}
-        >
-          <CartaoAcao
-            emoji="➕"
-            titulo="Criar um grupo"
-            texto="Chame a galera e monte um canal novo"
+        <Carrossel slides={slides} desfoque={state.theme.blur} />
+
+        <Atalhos>
+          <Atalho
             onClick={() =>
-              openModal({
-                type: "create_group_or_server",
-                client: client()!,
-              })
+              openModal({ type: "create_group_or_server", client: client()! })
             }
-          />
-          <CartaoAcao
-            emoji="📖"
-            titulo="Como usar o Callju"
-            texto="Primeira vez aqui? Começa por aqui"
-            onClick={() => setGuiaAberto(true)}
-          />
-          <CartaoAcao
-            emoji="🖥️"
-            titulo="Baixe o app pro PC"
-            texto="Sem aba de navegador, e se atualiza sozinho"
-            onClick={() => setAppAberto(true)}
-          />
-          <CartaoAcao
-            emoji="🧡"
-            titulo="Me ajude a manter no ar"
-            texto="O servidor tem custo mensal"
-            onClick={() => setPixAberto(true)}
-            destaque
-          />
-        </div>
+          >
+            <IconeAtalho>
+              <Symbol size={19}>add</Symbol>
+            </IconeAtalho>
+            Criar um grupo
+          </Atalho>
+
+          <Atalho onClick={() => setGuiaAberto(true)}>
+            <IconeAtalho>
+              <Symbol size={19}>menu_book</Symbol>
+            </IconeAtalho>
+            Como usar
+          </Atalho>
+
+          <Atalho onClick={() => navigate("/minigames")}>
+            <IconeAtalho>
+              <Symbol size={19}>sports_esports</Symbol>
+            </IconeAtalho>
+            Minigames
+          </Atalho>
+
+          <Atalho onClick={() => setPixAberto(true)}>
+            <IconeAtalho>
+              <Symbol size={19}>favorite</Symbol>
+            </IconeAtalho>
+            Apoiar o Callju
+          </Atalho>
+        </Atalhos>
 
         <GuiaModal
           aberto={guiaAberto()}
@@ -510,3 +508,58 @@ export function HomePage() {
     </Base>
   );
 }
+
+/**
+ * Luz fraca atras do conteudo.
+ *
+ * Um circulo grande e bem apagado na cor da marca, no alto da tela. E o unico
+ * lugar da home com cor no fundo: o resto e preto, e a luz so tira o ar de
+ * pagina vazia.
+ */
+const Brilho = styled("div", {
+  base: {
+    position: "absolute",
+    top: "-140px",
+    left: "50%",
+    width: "760px",
+    height: "420px",
+    transform: "translateX(-50%)",
+    pointerEvents: "none",
+    background:
+      "radial-gradient(closest-side, rgba(232, 130, 60, 0.13), transparent)",
+  },
+});
+
+const Marca = styled("div", {
+  base: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    marginBottom: "2px",
+
+    "& img": {
+      width: "54px",
+      height: "54px",
+    },
+
+    "& > span": {
+      display: "flex",
+      flexDirection: "column",
+      lineHeight: 1,
+    },
+
+    "& .callju-wordmark": {
+      fontSize: "2.1em",
+      fontWeight: 800,
+      letterSpacing: "-0.035em",
+    },
+
+    "& small": {
+      marginTop: "6px",
+      fontSize: "0.62em",
+      letterSpacing: "0.26em",
+      textTransform: "uppercase",
+      opacity: 0.35,
+    },
+  },
+});

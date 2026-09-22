@@ -135,7 +135,13 @@ const base = cva({
     borderRadius: "var(--borderRadius-md)",
     minHeight: "1em",
 
-    transition: "background-color var(--transitions-fast)",
+    transition: "background-color var(--mov-toque)",
+
+    // Realce discreto na mensagem sob o mouse: ajuda a nao se perder na
+    // conversa sem pintar a tela
+    "&:hover": {
+      background: "var(--callju-hover-fraco)",
+    },
 
     "& a:hover": {
       textDecoration: "underline",

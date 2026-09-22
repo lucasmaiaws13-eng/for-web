@@ -251,3 +251,46 @@
   outline: 2px solid var(--callju-accent);
   outline-offset: 2px;
 }
+
+/* Vocabulario de movimento.
+   Curvas diferentes pra propositos diferentes: o que responde ao mouse precisa
+   sair na hora, o que muda de estado precisa ser percebido, e o que aparece
+   precisa chegar suave. O elastico passa um tiquinho do ponto final e volta,
+   que e o que da graca aos detalhes pequenos. */
+:root {
+  --mov-toque: 120ms cubic-bezier(0.3, 0, 0, 1);
+  --mov-estado: 200ms cubic-bezier(0.2, 0, 0, 1);
+  --mov-entrada: 320ms cubic-bezier(0.22, 1, 0.36, 1);
+  --mov-elastico: 420ms cubic-bezier(0.34, 1.4, 0.5, 1);
+}
+
+/* Realces de mouse, sem cor: o tema fica limpo e a marca aparece so onde
+   ela e destaque mesmo */
+:root {
+  --callju-hover: rgba(255, 255, 255, 0.05);
+  --callju-hover-fraco: rgba(255, 255, 255, 0.022);
+}
+
+/* Dica de ferramenta subindo de leve */
+@keyframes callju-dica {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Conteudo novo entrando: usado ao trocar de canal e ao abrir paginas */
+@keyframes callju-entrada {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
