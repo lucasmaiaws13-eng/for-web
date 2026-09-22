@@ -221,10 +221,18 @@ export function AppearanceMenu() {
             <Button
               size="xs"
               group="connected-start"
-              groupActive={state.theme.m3Variant === "caju"}
-              onPress={() => state.theme.setM3Variant("caju")}
+              groupActive={state.theme.m3Variant === "content"}
+              onPress={() => state.theme.setM3Variant("content")}
             >
-              🥭 Caju
+              Callju
+            </Button>
+            <Button
+              size="xs"
+              group="connected"
+              groupActive={state.theme.m3Variant === "legacy"}
+              onPress={() => state.theme.setM3Variant("legacy")}
+            >
+              <Trans>Legacy</Trans>
             </Button>
             <Button
               size="xs"

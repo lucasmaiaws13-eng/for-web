@@ -39,6 +39,7 @@ export type TypeTheme = {
    * (Material You)
    */
   m3Variant:
+    | "legacy"
     | "caju"
     | "monochrome"
     | "neutral"
@@ -137,7 +138,10 @@ export class Theme extends AbstractStore<"theme", TypeTheme> {
 
       m3Accent: "#e8823c",
       m3Contrast: 0.0,
-      m3Variant: "tonal_spot",
+      // Preto neutro com laranja nos destaques. O 'content' mantem a cor da
+      // marca nos elementos de destaque em vez de lava-la, e as superficies
+      // vem do esquema monocromatico (ver materialTheme.ts).
+      m3Variant: "content",
 
       interfaceFont: "Inter",
       monospaceFont: "Fira Code",
@@ -173,8 +177,14 @@ export class Theme extends AbstractStore<"theme", TypeTheme> {
       data.m3Accent = input.m3Accent;
     }
 
+    // O tema marrom antigo passa a se chamar Legacy, e quem estava nele vai
+    // para o tema novo: "caju" fica de fora da lista aceita, entao o valor
+    // padrao prevalece. Quem quiser o antigo escolhe Legacy nas configuracoes,
+    // e essa escolha e respeitada daqui pra frente. O resto das preferencias
+    // segue sendo lido normalmente.
     if (
       [
+        "legacy",
         "monochrome",
         "neutral",
         "tonal_spot",

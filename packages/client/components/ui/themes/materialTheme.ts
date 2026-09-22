@@ -170,6 +170,7 @@ function generateMaterialYouScheme(
       scheme = new SchemeVibrant(hct, darkMode, contrast);
       break;
     case "caju":
+    case "legacy":
     case "tonal_spot":
     default:
       scheme = new SchemeTonalSpot(hct, darkMode, contrast);
@@ -186,10 +187,12 @@ function generateMaterialYouScheme(
   // so para primary, secondary, tertiary e error.
   const neutro = new SchemeMonochrome(hct, darkMode, contrast);
 
-  // Na variante 'caju' as superficies herdam a matiz quente do destaque,
-  // dando o visual amadeirado. Em todas as outras elas vem do esquema
-  // monocromatico, resultando em preto e cinza neutros de verdade.
-  const superficie = variant === "caju" ? scheme : neutro;
+  // No tema Legacy as superficies herdam a matiz quente do destaque, que era
+  // o visual amadeirado antigo. Em todas as outras, inclusive no tema padrao,
+  // elas vem do esquema monocromatico: preto e cinza neutros de verdade, com
+  // o laranja aparecendo so nos destaques.
+  const superficie =
+    variant === "caju" || variant === "legacy" ? scheme : neutro;
 
   return {
     primary: hexFromArgb(scheme.primary),
