@@ -1,6 +1,7 @@
 import { getVirtmic } from "./virtualMic";
 
 export { useVoice, VoiceContext } from "./state";
+export { comRabo } from "./comRabo";
 
 export { InRoom } from "./components/InRoom";
 export { RoomAudioManager } from "./components/RoomAudioManager";

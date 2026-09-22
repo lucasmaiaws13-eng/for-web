@@ -14,7 +14,7 @@ import { styled } from "styled-system/jsx";
 
 import { UserContextMenu } from "@revolt/app";
 import { useUser } from "@revolt/markdown/users";
-import { InRoom, useVoice } from "@revolt/rtc";
+import { InRoom, comRabo, useVoice } from "@revolt/rtc";
 
 import { Avatar, Ripple, typography } from "../../design";
 import { Row } from "../../layout";
@@ -111,7 +111,9 @@ function ParticipantLive(props: {
     source: Track.Source.Microphone,
   });
 
-  const isSpeaking = useIsSpeaking(participant);
+  const isSpeakingServidor = comRabo(useIsSpeaking(participant));
+  const isSpeaking = () =>
+    participant.isLocal ? voice.falandoLocal() : isSpeakingServidor();
 
   return (
     <CommonUser

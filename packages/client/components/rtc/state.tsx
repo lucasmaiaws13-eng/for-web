@@ -59,6 +59,15 @@ type ScreenShareQuality = Required<
   encoding: VideoEncoding;
 };
 
+/**
+ * Volume (0 a 1) a partir do qual conta como fala. Bem baixo de proposito: o
+ * filtro de ruido ja tirou o resto, e o anel precisa acender no primeiro som.
+ */
+const NIVEL_DE_FALA = 0.015;
+
+/** Quanto o anel fica aceso depois do ultimo som, em ms */
+const RABO_DA_FALA = 250;
+
 class Voice {
   #settings: VoiceSettings;
 
@@ -111,6 +120,24 @@ class Voice {
    */
   surdos: Accessor<Set<string>>;
   #setSurdos: Setter<Set<string>>;
+
+  /**
+   * Se a propria pessoa esta falando agora, medido aqui no computador.
+   *
+   * O anel de quem fala vem do servidor: ele ouve o volume de cada um e avisa
+   * a sala. Para os outros isso e o unico jeito, e o atraso da ida e volta
+   * passa despercebido. No proprio rosto incomoda muito, porque o anel e a
+   * unica confirmacao de que a voz saiu, e chegava depois da frase terminar.
+   *
+   * Aqui o nivel do microfone e lido direto da faixa que esta sendo enviada,
+   * ja depois do filtro de ruido, entao o anel acende junto com a voz e nao
+   * acende com o ventilador.
+   */
+  falandoLocal: Accessor<boolean>;
+  #setFalandoLocal: Setter<boolean>;
+
+  /** Medicao em andamento do proprio microfone */
+  #medidorLocal?: { faixa: MediaStreamTrack; parar: () => void };
 
   private sound: SoundController;
   private device: Device;
@@ -176,6 +203,10 @@ class Voice {
     const [surdos, setSurdos] = createSignal<Set<string>>(new Set());
     this.surdos = surdos;
     this.#setSurdos = setSurdos;
+
+    const [falandoLocal, setFalandoLocal] = createSignal(false);
+    this.falandoLocal = falandoLocal;
+    this.#setFalandoLocal = setFalandoLocal;
 
     const inst = useInstance();
     this.instancia = inst;
@@ -343,6 +374,19 @@ class Voice {
           );
         }
       }
+      this.#acompanharProprioMicrofone();
+    });
+
+    // Microfone fechado, aberto, trocado ou mudo: a medicao segue a faixa que
+    // estiver no ar no momento.
+    room.addListener("localTrackUnpublished", () =>
+      this.#acompanharProprioMicrofone(),
+    );
+    room.addListener("trackMuted", (_pub, participante) => {
+      if (participante.isLocal) this.#acompanharProprioMicrofone();
+    });
+    room.addListener("trackUnmuted", (_pub, participante) => {
+      if (participante.isLocal) this.#acompanharProprioMicrofone();
     });
 
     room.addListener("participantConnected", () => {
@@ -403,6 +447,7 @@ class Voice {
 
   disconnect() {
     this.device.releaseWakeLock();
+    this.#pararDeMedirMicrofone();
     try {
       const room = this.room();
       if (!room) return;
@@ -802,6 +847,93 @@ class Voice {
    * microfone fecha na hora e so volta a abrir na tecla; desligando, ele volta
    * a seguir o botao de mudo.
    */
+  /**
+   * Liga, desliga ou troca a medicao do proprio microfone conforme o que esta
+   * publicado agora.
+   */
+  #acompanharProprioMicrofone() {
+    const publicacao = this.room()?.localParticipant.getTrackPublication(
+      Track.Source.Microphone,
+    );
+    const audio = publicacao?.audioTrack;
+
+    // A faixa medida e a que vai pro ar: com filtro de ruido ligado, e a
+    // processada. Ela so aparece um instante depois da publicacao, dai a
+    // segunda olhada logo abaixo.
+    const faixa =
+      publicacao && !publicacao.isMuted
+        ? (audio?.getProcessor()?.processedTrack ?? audio?.mediaStreamTrack)
+        : undefined;
+
+    if (!faixa || faixa.readyState !== "live") {
+      this.#pararDeMedirMicrofone();
+      return;
+    }
+
+    if (this.#medidorLocal?.faixa === faixa) return;
+    this.#medirMicrofone(faixa);
+
+    if (!audio?.getProcessor()?.processedTrack) {
+      setTimeout(() => this.#acompanharProprioMicrofone(), 500);
+    }
+  }
+
+  #pararDeMedirMicrofone() {
+    this.#medidorLocal?.parar();
+    this.#medidorLocal = undefined;
+    this.#setFalandoLocal(false);
+  }
+
+  /**
+   * Mede o volume da faixa a cada 50 ms e acende o anel na hora.
+   *
+   * O rabo de 250 ms evita que o anel pisque entre uma silaba e outra, que era
+   * a reclamacao de "acende e apaga rapido demais".
+   */
+  #medirMicrofone(faixa: MediaStreamTrack) {
+    this.#pararDeMedirMicrofone();
+
+    try {
+      const contexto = new AudioContext();
+      const analisador = contexto.createAnalyser();
+      analisador.fftSize = 512;
+      analisador.smoothingTimeConstant = 0;
+
+      const fonte = contexto.createMediaStreamSource(new MediaStream([faixa]));
+      fonte.connect(analisador);
+
+      const amostras = new Uint8Array(analisador.fftSize);
+      let ultimaVoz = 0;
+
+      const relogio = setInterval(() => {
+        analisador.getByteTimeDomainData(amostras);
+
+        let soma = 0;
+        for (const amostra of amostras) {
+          const desvio = (amostra - 128) / 128;
+          soma += desvio * desvio;
+        }
+        const nivel = Math.sqrt(soma / amostras.length);
+
+        const agora = performance.now();
+        if (nivel > NIVEL_DE_FALA) ultimaVoz = agora;
+        this.#setFalandoLocal(agora - ultimaVoz < RABO_DA_FALA);
+      }, 50);
+
+      this.#medidorLocal = {
+        faixa,
+        parar: () => {
+          clearInterval(relogio);
+          fonte.disconnect();
+          contexto.close().catch(() => undefined);
+        },
+      };
+    } catch (erro) {
+      // Sem medicao local o anel volta a depender do servidor, como antes
+      console.warn("[callju] nao consegui medir o proprio microfone", erro);
+    }
+  }
+
   async reconciliarMicrofone() {
     const room = this.room();
     if (!room || !this.speakingPermission) return;

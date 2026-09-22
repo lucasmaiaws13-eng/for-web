@@ -14,7 +14,7 @@ import { styled } from "styled-system/jsx";
 
 import { UserContextMenu } from "@revolt/app";
 import { useUser } from "@revolt/markdown/users";
-import { useVoice } from "@revolt/rtc";
+import { comRabo, useVoice } from "@revolt/rtc";
 import { useState } from "@revolt/state";
 import { Avatar } from "@revolt/ui/components/design";
 import { Row } from "@revolt/ui/components/layout";
@@ -71,7 +71,10 @@ export function ParticipantTile(props: TileProps) {
 
   const isVideo = () => !isVideoMuted();
   const isScreenShare = () => track.source === Track.Source.ScreenShare;
-  const isSpeaking = useIsSpeaking(participant);
+  const isSpeakingServidor = comRabo(useIsSpeaking(participant));
+  // A propria voz aparece na hora, medida aqui; a dos outros vem do servidor
+  const isSpeaking = () =>
+    participant.isLocal ? voice.falandoLocal() : isSpeakingServidor();
 
   /**
    * Se o video desta pessoa deve aparecer

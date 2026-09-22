@@ -14,7 +14,7 @@ import { Track } from "livekit-client";
 import { styled } from "styled-system/jsx";
 
 import { useUser } from "@revolt/markdown/users";
-import { useVoice } from "@revolt/rtc";
+import { comRabo, useVoice } from "@revolt/rtc";
 import { Avatar } from "@revolt/ui/components/design";
 import { Row } from "@revolt/ui/components/layout";
 import { Symbol } from "@revolt/ui/components/utils/Symbol";
@@ -56,6 +56,7 @@ export function VoiceCallCardPiP() {
 }
 
 function ConnectedUser() {
+  const voice = useVoice();
   const participant = useEnsureParticipant();
 
   const isMuted = useIsMuted({
@@ -63,7 +64,9 @@ function ConnectedUser() {
     source: Track.Source.Microphone,
   });
 
-  const isSpeaking = useIsSpeaking(participant);
+  const isSpeakingServidor = comRabo(useIsSpeaking(participant));
+  const isSpeaking = () =>
+    participant.isLocal ? voice.falandoLocal() : isSpeakingServidor();
   const user = useUser(participant.identity);
 
   return (
