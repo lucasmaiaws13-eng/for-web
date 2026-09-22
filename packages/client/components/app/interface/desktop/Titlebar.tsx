@@ -1,4 +1,4 @@
-import { Match, Show, Switch, createSignal } from "solid-js";
+import { Match, Show, Switch, createSignal, onCleanup } from "solid-js";
 import { Motion, Presence } from "solid-motionone";
 
 import { css } from "styled-system/css";
@@ -20,15 +20,31 @@ const isMacOS = navigator.platform.startsWith("Mac");
 const isNative = !!window.native;
 
 export function Titlebar() {
+  // A configuracao do app desktop chega por mensagem, e so depois que a pagina
+  // termina de carregar. Ate la desktopConfig.get() devolve undefined. Ler
+  // qualquer campo direto dali (customFrame, windowState) estourava e levava a
+  // arvore inteira junto: era a tela preta do app, que acontecia com uns e nao
+  // com outros conforme quem ganhava a corrida entre a pagina e a mensagem.
+  //
+  // Aqui a configuracao vira um sinal: comeca vazia, e quando chegar a barra
+  // de titulo aparece. Enquanto isso nada quebra.
+  const [configDesktop, setConfigDesktop] = createSignal(
+    isNative ? window.desktopConfig?.get() : undefined,
+  );
+  if (isNative && !configDesktop()) {
+    const espera = setInterval(() => {
+      const recebida = window.desktopConfig?.get();
+      if (recebida) {
+        setConfigDesktop(recebida);
+        setIsMaximised(recebida.windowState?.isMaximised ?? false);
+        clearInterval(espera);
+      }
+    }, 100);
+    onCleanup(() => clearInterval(espera));
+  }
+
   const [isMaximised, setIsMaximised] = createSignal(
-    // Sem as protecoes, esta linha derruba o app inteiro numa tela preta.
-    //
-    // isNative diz que estamos no app desktop, mas nao garante que a ponte
-    // desktopConfig existiu: se ela falhar ao carregar, o acesso direto
-    // estoura, a barra de titulo morre e leva a arvore toda junto. No
-    // navegador isso nunca aparece, porque isNative e falso. A linha 46 ja
-    // usava ?. justamente por isso; esta tinha ficado para tras.
-    isNative ? (window.desktopConfig?.get()?.windowState?.isMaximised ?? false) : false,
+    configDesktop()?.windowState?.isMaximised ?? false,
   );
   const { lifecycle } = useClientLifecycle();
 
@@ -50,7 +66,7 @@ export function Titlebar() {
     <Presence>
       <Show
         when={
-          (isNative && window.desktopConfig?.get().customFrame) ||
+          (isNative && configDesktop()?.customFrame) ||
           isDisconnected()
         }
       >
