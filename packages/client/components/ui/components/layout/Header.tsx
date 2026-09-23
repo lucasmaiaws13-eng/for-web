@@ -44,7 +44,9 @@ export const Header = styled("div", {
       },
       secondary: {
         margin: "var(--gap-md)",
-        backgroundColor: "var(--md-sys-color-surface-variant)",
+        borderRadius: "var(--borderRadius-lg)",
+        border: "1px solid var(--md-sys-color-outline-variant)",
+        backgroundColor: "var(--md-sys-color-surface-container)",
       },
     },
     image: {

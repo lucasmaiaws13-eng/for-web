@@ -292,7 +292,7 @@ export const tile = cva({
     display: "grid",
     aspectRatio: "16/9",
     // O quadrinho entra subindo, em vez de simplesmente surgir
-    animation: "callju-entrada var(--mov-entrada) both",
+    animation: "callju-quadro var(--mov-entrada) both",
     transition:
       "outline-color var(--mov-toque), background var(--mov-estado), transform var(--mov-estado), box-shadow var(--mov-estado), width 0s, height 0s",
     borderRadius: "var(--borderRadius-lg)",
@@ -383,9 +383,9 @@ const FundoDaFoto = styled("div", {
 
     // Desfoque forte e um empurrao de saturacao: sobra a cor, nao o desenho.
     // A escala evita a borda apagada que o desfoque cria nos cantos.
-    filter: "blur(28px) saturate(1.6)",
+    filter: "blur(30px) saturate(1.7)",
     transform: "scale(1.4)",
-    opacity: 0.55,
+    opacity: 0.85,
   },
 });
 
@@ -401,8 +401,10 @@ const VeuDoFundo = styled("div", {
     gridArea: "1/1",
     width: "100%",
     height: "100%",
+    // Escurece o bastante pro nome e os icones continuarem legiveis, e leve
+    // o bastante pra cor da pessoa continuar sendo a cor do quadrinho
     background:
-      "linear-gradient(to bottom, rgba(8, 8, 10, 0.45), rgba(8, 8, 10, 0.72))",
+      "linear-gradient(to bottom, rgba(8, 8, 10, 0.18), rgba(8, 8, 10, 0.5))",
   },
 });
 

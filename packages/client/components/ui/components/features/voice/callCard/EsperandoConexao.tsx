@@ -15,13 +15,8 @@ import { Avatar } from "@revolt/ui/components/design";
 export function EsperandoConexao() {
   const client = useClient();
 
-  const foto = () => client().user?.avatarURL;
-
   return (
     <Espera>
-      {/* Mesmo fundo do quadrinho da call: a foto da pessoa, ampliada e
-          desfocada, virando cor */}
-      <Fundo style={{ "background-image": foto() ? `url(${foto()})` : undefined }} />
       <Piscando>
         <Avatar
           size={64}
@@ -32,18 +27,6 @@ export function EsperandoConexao() {
     </Espera>
   );
 }
-
-const Fundo = styled("div", {
-  base: {
-    position: "absolute",
-    inset: 0,
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-    filter: "blur(34px) saturate(1.6)",
-    transform: "scale(1.3)",
-    opacity: 0.4,
-  },
-});
 
 const Espera = styled("div", {
   base: {

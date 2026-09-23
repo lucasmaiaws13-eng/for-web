@@ -1,6 +1,5 @@
-import { For, Show, createSignal, onCleanup, onMount } from "solid-js";
+import { For, Show, createMemo, createSignal, onCleanup, onMount } from "solid-js";
 
-import { Trans } from "@lingui/solid/macro";
 import { cva } from "styled-system/css";
 import { styled } from "styled-system/jsx";
 
@@ -8,10 +7,8 @@ import { IS_DEV, useClient } from "@revolt/client";
 import { useModals } from "@revolt/modal";
 import { useNavigate } from "@revolt/routing";
 import { useState } from "@revolt/state";
-import { Button, Header, iconSize, main } from "@revolt/ui";
+import { Avatar, Button, Header, main } from "@revolt/ui";
 import { Symbol } from "@revolt/ui/components/utils/Symbol";
-
-import MdHome from "@material-design-icons/svg/filled/home.svg?component-solid";
 
 import { AppModal, AvisoModal, GuiaModal, PixModal } from "./CalljuModals";
 import { HeaderIcon } from "./common/CommonHeader";
@@ -21,14 +18,17 @@ const CHAVE_PIX = "+5591983673239";
 
 // >>> TROQUE AQUI pelo codigo do convite permanente do servidor principal.
 // So o codigo, nao a URL inteira. Ex: se o link e /invite/AbC123, use "AbC123".
-// Enquanto estiver com o valor de exemplo, o botao fica escondido.
 const CONVITE_SERVIDOR = "TA4TJ57t";
 
-/** Nome do servidor principal, como aparece no botao de entrar */
+/** Nome do servidor principal, como aparece nos textos */
 const NOME_DO_SERVIDOR = "Salvação";
 
-/** De quanto em quanto tempo o carrossel troca sozinho */
-const TEMPO_DO_SLIDE = 7000;
+/** De quanto em quanto tempo a home relê o que esta acontecendo */
+const RITMO = 6000;
+
+/* ------------------------------------------------------------------ */
+/* Peças                                                               */
+/* ------------------------------------------------------------------ */
 
 const Base = styled("div", {
   base: {
@@ -42,284 +42,57 @@ const Base = styled("div", {
   },
 });
 
-/**
- * O conteudo fica no meio da tela, na vertical e na horizontal.
- *
- * Antes ele comecava no topo e deixava metade da tela vazia embaixo, o que
- * fazia a home parecer inacabada em telas grandes.
- */
 const content = cva({
   base: {
     ...main.raw(),
-    padding: "24px 20px 40px",
-    gap: "18px",
+    padding: "28px 20px 40px",
+    gap: "14px",
     alignItems: "center",
     justifyContent: "center",
   },
 });
 
 /**
- * Placa de vidro.
- *
- * Desfoque do que esta atras, contorno claro em cima e sombra embaixo: o
- * conjunto da a impressao de uma placa de vidro sobre o fundo. Quem desligou
- * os efeitos de transparencia recebe a mesma placa em cor cheia.
+ * Placa de vidro: desfoque do que esta atras, contorno claro no topo e sombra
+ * embaixo. Quem desligou os efeitos de transparencia recebe a placa em cor
+ * cheia, sem perder o desenho.
  */
 const Vidro = styled("div", {
   base: {
     position: "relative",
+    width: "100%",
+    maxWidth: "540px",
     overflow: "hidden",
-    borderRadius: "22px",
-    border: "1px solid rgba(255, 255, 255, 0.09)",
+    borderRadius: "20px",
+    border: "1px solid rgba(255, 255, 255, 0.08)",
     background: "rgba(255, 255, 255, 0.035)",
     boxShadow:
-      "inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 20px 50px rgba(0, 0, 0, 0.45)",
+      "inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 16px 40px rgba(0, 0, 0, 0.4)",
   },
   variants: {
     desfoque: {
-      true: {
-        backdropFilter: "blur(22px) saturate(1.25)",
-      },
-      false: {
-        background: "var(--md-sys-color-surface-container)",
-      },
+      true: { backdropFilter: "blur(20px) saturate(1.2)" },
+      false: { background: "var(--md-sys-color-surface-container)" },
     },
   },
 });
 
-/* ------------------------------------------------------------------ */
-/* Carrossel                                                           */
-/* ------------------------------------------------------------------ */
-
-type Slide = {
-  etiqueta: string;
-  titulo: string;
-  texto: string;
-  icone: string;
-  aoClicar: () => void;
-};
-
-/**
- * Carrossel das novidades.
- *
- * Uma novidade de cada vez, trocando sozinha. As setas andam de slide e nao
- * abrem nada; quem quiser abrir clica no cartao. Passar o mouse segura a
- * troca, porque ler importa mais que o relogio.
- */
-function Carrossel(props: { slides: Slide[] }) {
-  const [atual, setAtual] = createSignal(0);
-  const [parado, setParado] = createSignal(false);
-
-  const andar = (passo: number) =>
-    setAtual((i) => (i + passo + props.slides.length) % props.slides.length);
-
-  onMount(() => {
-    const relogio = setInterval(() => {
-      if (!parado()) andar(1);
-    }, TEMPO_DO_SLIDE);
-    onCleanup(() => clearInterval(relogio));
-  });
-
-  return (
-    <CarrosselBase
-      onMouseEnter={() => setParado(true)}
-      onMouseLeave={() => setParado(false)}
-    >
-      <Trilho style={{ transform: `translateX(-${atual() * 100}%)` }}>
-        <For each={props.slides}>
-          {(slide) => (
-            <SlideBase onClick={slide.aoClicar}>
-              <Icone>
-                <Symbol size={24}>{slide.icone}</Symbol>
-              </Icone>
-
-              <span style={{ flex: "1", "min-width": "0" }}>
-                <Etiqueta>{slide.etiqueta}</Etiqueta>
-                <Titulo>{slide.titulo}</Titulo>
-                <Texto>{slide.texto}</Texto>
-              </span>
-            </SlideBase>
-          )}
-        </For>
-      </Trilho>
-
-      <Seta lado="esquerda" aria-label="Anterior" onClick={() => andar(-1)}>
-        <Symbol size={18}>chevron_left</Symbol>
-      </Seta>
-      <Seta lado="direita" aria-label="Próximo" onClick={() => andar(1)}>
-        <Symbol size={18}>chevron_right</Symbol>
-      </Seta>
-
-      <Bolinhas>
-        <For each={props.slides}>
-          {(slide, i) => (
-            <Bolinha
-              ativa={atual() === i()}
-              aria-label={slide.titulo}
-              onClick={() => setAtual(i())}
-            />
-          )}
-        </For>
-      </Bolinhas>
-    </CarrosselBase>
-  );
-}
-
-const CarrosselBase = styled("div", {
-  base: {
-    position: "relative",
-    width: "100%",
-    overflow: "hidden",
-    borderRadius: "16px",
-    border: "1px solid rgba(255, 255, 255, 0.07)",
-    background: "rgba(255, 255, 255, 0.03)",
-  },
-});
-
-const Trilho = styled("div", {
-  base: {
-    display: "flex",
-    transition: "transform var(--mov-entrada)",
-  },
-});
-
-const SlideBase = styled("button", {
-  base: {
-    flex: "0 0 100%",
-    display: "flex",
-    alignItems: "center",
-    gap: "14px",
-
-    padding: "18px 44px 26px 18px",
-    border: "none",
-    background: "transparent",
-    color: "var(--md-sys-color-on-surface)",
-    textAlign: "start",
-    font: "inherit",
-    cursor: "pointer",
-
-    transition: "background var(--mov-toque)",
-    _hover: {
-      background: "rgba(255, 255, 255, 0.03)",
-    },
-  },
-});
-
-const Icone = styled("span", {
-  base: {
-    width: "42px",
-    height: "42px",
-    flexShrink: 0,
-    display: "grid",
-    placeItems: "center",
-    borderRadius: "13px",
-    color: "#fff",
-    background: "var(--callju-grad)",
-    boxShadow: "0 4px 14px rgba(0, 0, 0, 0.4)",
-  },
-});
-
-const Etiqueta = styled("span", {
-  base: {
-    display: "block",
-    fontSize: "0.66em",
-    letterSpacing: "0.16em",
-    textTransform: "uppercase",
-    color: "var(--callju-accent-claro)",
-  },
-});
-
-const Titulo = styled("span", {
-  base: {
-    display: "block",
-    marginTop: "3px",
-    fontSize: "1em",
-    fontWeight: 700,
-    letterSpacing: "-0.01em",
-  },
-});
-
-const Texto = styled("span", {
-  base: {
-    display: "block",
-    marginTop: "2px",
-    fontSize: "0.83em",
-    opacity: 0.5,
-    lineHeight: 1.4,
-  },
-});
-
-const Seta = styled("button", {
+const Brilho = styled("div", {
   base: {
     position: "absolute",
-    top: "50%",
-    width: "28px",
-    height: "28px",
-    marginTop: "-18px",
-
-    display: "grid",
-    placeItems: "center",
-    border: "1px solid rgba(255, 255, 255, 0.08)",
-    borderRadius: "99px",
-    background: "rgba(0, 0, 0, 0.35)",
-    color: "var(--md-sys-color-on-surface)",
-    cursor: "pointer",
-
-    opacity: 0,
-    transition: "opacity var(--mov-toque), background var(--mov-toque)",
-
-    "div:hover > &": {
-      opacity: 0.85,
-    },
-
-    _hover: {
-      opacity: "1 !important",
-      background: "rgba(0, 0, 0, 0.6)",
-    },
-  },
-  variants: {
-    lado: {
-      esquerda: { left: "8px" },
-      direita: { right: "8px" },
-    },
-  },
-});
-
-const Bolinhas = styled("div", {
-  base: {
-    position: "absolute",
-    bottom: "10px",
-    left: 0,
-    right: 0,
-    display: "flex",
-    justifyContent: "center",
-    gap: "5px",
-  },
-});
-
-const Bolinha = styled("button", {
-  base: {
-    width: "5px",
-    height: "5px",
-    padding: 0,
-    border: "none",
-    cursor: "pointer",
-    borderRadius: "99px",
-    background: "rgba(255, 255, 255, 0.22)",
-    transition: "width var(--mov-elastico), background var(--mov-estado)",
-  },
-  variants: {
-    ativa: {
-      true: {
-        width: "16px",
-        background: "var(--callju-accent)",
-      },
-    },
+    top: "4%",
+    left: "50%",
+    width: "640px",
+    height: "360px",
+    transform: "translateX(-50%)",
+    pointerEvents: "none",
+    background:
+      "radial-gradient(closest-side, rgba(232, 130, 60, 0.13), transparent)",
   },
 });
 
 /* ------------------------------------------------------------------ */
-/* Pagina                                                              */
+/* Página                                                              */
 /* ------------------------------------------------------------------ */
 
 export function HomePage() {
@@ -333,91 +106,215 @@ export function HomePage() {
   const [appAberto, setAppAberto] = createSignal(false);
   const [avisoAberto, setAvisoAberto] = createSignal(false);
 
+  // Um relogio lento so pra home reler o que esta acontecendo: quem entrou na
+  // call, quem ficou online. Sem isso a tela envelhece parada na frente da
+  // pessoa.
+  const [tique, setTique] = createSignal(0);
+  onMount(() => {
+    const r = setInterval(() => setTique((n) => n + 1), RITMO);
+    onCleanup(() => clearInterval(r));
+  });
+
+  const saudacao = () => {
+    const h = new Date().getHours();
+    if (h < 5) return "Boa madrugada";
+    if (h < 12) return "Bom dia";
+    if (h < 18) return "Boa tarde";
+    return "Boa noite";
+  };
+
+  /** Canais de voz com gente dentro, em todos os servidores */
+  const callsAtivas = createMemo(() => {
+    tique();
+    const lista = [];
+    for (const canal of client().channels.values()) {
+      if (!canal.isVoice) continue;
+      const gente = [...canal.voiceParticipants.values()];
+      if (gente.length) lista.push({ canal, gente });
+    }
+    return lista;
+  });
+
+  const online = createMemo(() => {
+    tique();
+    let total = 0;
+    for (const usuario of client().users.values()) {
+      if (usuario.bot) continue;
+      // online e o que o proprio cliente calcula a partir da presenca
+      if (usuario.online) total += 1;
+    }
+    return total;
+  });
+
+  /** Estado da cruzada de hoje, pra home ter vida mesmo com a call vazia */
+  const [cruzada, setCruzada] = createSignal<{
+    pendentes: number;
+    total: number;
+  }>();
+
+  onMount(async () => {
+    try {
+      const [cabecalho, token] = client().authenticationHeader;
+      const r = await fetch("/jogos/cruzada/status", {
+        headers: { [cabecalho]: token },
+      });
+      if (!r.ok) return;
+      const dados = await r.json();
+      const niveis = Object.values(dados.niveis ?? {}) as {
+        terminou: boolean;
+      }[];
+      setCruzada({
+        pendentes: niveis.filter((n) => !n.terminou).length,
+        total: niveis.length,
+      });
+    } catch {
+      // Sem os minigames no ar, a home simplesmente nao mostra esse cartao
+    }
+  });
+
   const conviteConfigurado =
     CONVITE_SERVIDOR !== "cole-o-codigo-do-convite-aqui";
-
-  const slides: Slide[] = [
-    {
-      etiqueta: "novidade",
-      titulo: "Callju pro computador",
-      texto: "Sem aba de navegador perdida, e se atualiza sozinho",
-      icone: "desktop_windows",
-      aoClicar: () => setAppAberto(true),
-    },
-    {
-      etiqueta: "minigames",
-      titulo: "Palavras cruzadas do dia",
-      texto: "Uma grade nova por dia, sozinho ou em equipe, com ranking",
-      icone: "sports_esports",
-      aoClicar: () => navigate("/minigames"),
-    },
-    {
-      etiqueta: "em fase de testes",
-      titulo: "Nosso canto na internet",
-      texto: "Sem anúncio e sem dono. Veja como o Callju funciona",
-      icone: "favorite",
-      aoClicar: () => setAvisoAberto(true),
-    },
-  ];
 
   return (
     <Base>
       <Header placement="primary">
         <HeaderIcon>
-          <MdHome {...iconSize(22)} fill="var(--callju-accent)" />
+          <Symbol size={22} color="var(--md-sys-color-primary)">
+            home
+          </Symbol>
         </HeaderIcon>
-        <Trans>Home</Trans>
+        Início
       </Header>
 
       <div use:scrollable={{ class: content() }}>
         <Brilho />
 
-        <Painel desfoque={state.theme.blur} class="callju-rise">
-          <Marca>
-            <img src="/assets/web/callju-marca.png" alt="" />
-            <span>
-              <span class="callju-wordmark">Callju</span>
-              <small>call + caju</small>
-            </span>
-          </Marca>
-
-          <Show when={conviteConfigurado}>
-            <Entrar onClick={() => navigate(`/invite/${CONVITE_SERVIDOR}`)}>
-              <Symbol size={20}>headset_mic</Symbol>
-              <span>
-                Entrar no {NOME_DO_SERVIDOR}
-                <small>pra conversar com a galera é por aqui</small>
-              </span>
-              <Symbol size={18}>chevron_right</Symbol>
-            </Entrar>
-          </Show>
-
-          <Carrossel slides={slides} />
-
-          <Atalhos>
-            <Atalho
-              onClick={() =>
-                openModal({ type: "create_group_or_server", client: client()! })
+        {/* Saudacao: o nome da pessoa e o que esta acontecendo agora */}
+        <Saudacao class="callju-rise">
+          <h1>
+            {saudacao()}, {client().user?.displayName ?? "pessoa"}
+          </h1>
+          <p>
+            <Show
+              when={callsAtivas().length}
+              fallback={
+                online() > 1
+                  ? `${online()} pessoas por aqui, e nenhuma call rolando`
+                  : "Tudo quieto por aqui agora"
               }
             >
-              <Symbol size={18}>add</Symbol>
-              Criar um grupo
-            </Atalho>
+              Tem call rolando no {NOME_DO_SERVIDOR}
+            </Show>
+          </p>
+        </Saudacao>
 
-            <Atalho onClick={() => setGuiaAberto(true)}>
-              <Symbol size={18}>menu_book</Symbol>
-              Como usar
-            </Atalho>
+        {/* O bloco principal muda conforme o que esta acontecendo: com call
+            rolando ele mostra quem esta la; vazio, ele convida a comecar */}
+        <Vidro desfoque={state.theme.blur} class="callju-rise">
+          <Show
+            when={callsAtivas().length}
+            fallback={
+              <Convite>
+                <span>
+                  <strong>A call está vazia</strong>
+                  <small>
+                    Entra e chama a galera. Quem estiver com o Callju aberto
+                    recebe um aviso.
+                  </small>
+                </span>
+                <Show when={conviteConfigurado}>
+                  <button
+                    class="callju-btn"
+                    onClick={() => navigate(`/invite/${CONVITE_SERVIDOR}`)}
+                    style={{ padding: "11px 18px", "white-space": "nowrap" }}
+                  >
+                    Entrar no {NOME_DO_SERVIDOR}
+                  </button>
+                </Show>
+              </Convite>
+            }
+          >
+            <For each={callsAtivas()}>
+              {({ canal, gente }) => (
+                <CallAtiva onClick={() => navigate(canal.path)}>
+                  <Pulso />
+                  <span style={{ flex: "1", "min-width": "0" }}>
+                    <strong>{canal.name}</strong>
+                    <small>
+                      {gente.length === 1
+                        ? "1 pessoa na call"
+                        : `${gente.length} pessoas na call`}
+                    </small>
+                  </span>
+                  <Fotos>
+                    <For each={gente.slice(0, 5)}>
+                      {(p) => (
+                        <Avatar
+                          size={28}
+                          src={client().users.get(p.userId)?.avatarURL}
+                          fallback={
+                            client().users.get(p.userId)?.displayName ?? "?"
+                          }
+                        />
+                      )}
+                    </For>
+                  </Fotos>
+                  <Symbol size={20}>chevron_right</Symbol>
+                </CallAtiva>
+              )}
+            </For>
+          </Show>
+        </Vidro>
 
-            <Atalho onClick={() => navigate("/minigames")}>
-              <Symbol size={18}>sports_esports</Symbol>
-              Minigames
-            </Atalho>
-          </Atalhos>
-        </Painel>
+        {/* Cruzada do dia: a home tem o que mostrar mesmo sem ninguem online */}
+        <Show when={cruzada()}>
+          <Vidro desfoque={state.theme.blur} class="callju-rise">
+            <Linha onClick={() => navigate("/minigames/cruzadas")}>
+              <Selo>
+                <Symbol size={20}>grid_on</Symbol>
+              </Selo>
+              <span style={{ flex: "1", "min-width": "0" }}>
+                <strong>Cruzada do dia</strong>
+                <small>
+                  <Show
+                    when={cruzada()!.pendentes}
+                    fallback="Você fechou as duas de hoje"
+                  >
+                    {cruzada()!.pendentes === cruzada()!.total
+                      ? "Nenhuma feita hoje, o ranking está aberto"
+                      : "Falta uma pra fechar o dia"}
+                  </Show>
+                </small>
+              </span>
+              <Symbol size={20}>chevron_right</Symbol>
+            </Linha>
+          </Vidro>
+        </Show>
 
-        {/* Apoiar sai do meio da tela e vira um botao de canto: ele importa,
-            mas nao e o que a pessoa veio fazer aqui */}
+        {/* Novidades e ajuda, em segundo plano */}
+        <Atalhos class="callju-rise">
+          <Atalho onClick={() => setAppAberto(true)}>
+            <Symbol size={18}>desktop_windows</Symbol>
+            App pro PC
+          </Atalho>
+          <Atalho
+            onClick={() =>
+              openModal({ type: "create_group_or_server", client: client()! })
+            }
+          >
+            <Symbol size={18}>add</Symbol>
+            Criar grupo
+          </Atalho>
+          <Atalho onClick={() => setGuiaAberto(true)}>
+            <Symbol size={18}>menu_book</Symbol>
+            Como usar
+          </Atalho>
+          <Atalho onClick={() => setAvisoAberto(true)}>
+            <Symbol size={18}>info</Symbol>
+            Sobre o Callju
+          </Atalho>
+        </Atalhos>
+
         <Apoiar onClick={() => setPixAberto(true)}>
           <Symbol size={18}>favorite</Symbol>
           <span>Apoiar o Callju</span>
@@ -429,15 +326,12 @@ export function HomePage() {
           mostrarBotaoServidor={conviteConfigurado}
           entrarNoServidor={() => navigate(`/invite/${CONVITE_SERVIDOR}`)}
         />
-
         <PixModal
           aberto={pixAberto()}
           fechar={() => setPixAberto(false)}
           chave={CHAVE_PIX}
         />
-
         <AppModal aberto={appAberto()} fechar={() => setAppAberto(false)} />
-
         <AvisoModal
           aberto={avisoAberto()}
           fechar={() => setAvisoAberto(false)}
@@ -454,147 +348,143 @@ export function HomePage() {
   );
 }
 
-const Painel = styled(Vidro, {
+/* ------------------------------------------------------------------ */
+/* Estilos                                                             */
+/* ------------------------------------------------------------------ */
+
+const Saudacao = styled("div", {
   base: {
     width: "100%",
-    maxWidth: "520px",
-    padding: "24px",
-    display: "flex",
-    flexDirection: "column",
+    maxWidth: "540px",
+    marginBottom: "2px",
+
+    "& h1": {
+      margin: 0,
+      fontSize: "1.6em",
+      fontWeight: 800,
+      letterSpacing: "-0.03em",
+    },
+
+    "& p": {
+      margin: "4px 0 0",
+      fontSize: "0.9em",
+      color: "var(--md-sys-color-on-surface-variant)",
+    },
+  },
+});
+
+const linhaBase = {
+  width: "100%",
+  display: "flex",
+  alignItems: "center",
+  gap: "12px",
+
+  padding: "16px 18px",
+  border: "none",
+  background: "transparent",
+  color: "var(--md-sys-color-on-surface)",
+  textAlign: "start",
+  font: "inherit",
+  cursor: "pointer",
+
+  transition: "background var(--mov-toque)",
+  _hover: { background: "rgba(255, 255, 255, 0.04)" },
+
+  "& strong": {
+    display: "block",
+    fontSize: "1em",
+    fontWeight: 700,
+    letterSpacing: "-0.01em",
+  },
+
+  "& small": {
+    display: "block",
+    marginTop: "2px",
+    fontSize: "0.82em",
+    fontWeight: 400,
+    color: "var(--md-sys-color-on-surface-variant)",
+  },
+} as const;
+
+const CallAtiva = styled("button", { base: linhaBase });
+const Linha = styled("button", { base: linhaBase });
+
+const Convite = styled("div", {
+  base: {
+    ...linhaBase,
+    cursor: "default",
+    _hover: { background: "transparent" },
     gap: "16px",
   },
 });
 
-/**
- * Luz fraca atras do painel: unico lugar da home com cor no fundo.
- */
-const Brilho = styled("div", {
+/** Bolinha que pulsa: a call esta acontecendo agora */
+const Pulso = styled("span", {
   base: {
-    position: "absolute",
-    top: "10%",
-    left: "50%",
-    width: "620px",
-    height: "380px",
-    transform: "translateX(-50%)",
-    pointerEvents: "none",
-    background:
-      "radial-gradient(closest-side, rgba(232, 130, 60, 0.14), transparent)",
+    width: "9px",
+    height: "9px",
+    flexShrink: 0,
+    borderRadius: "99px",
+    background: "var(--callju-accent)",
+    animation: "callju-pulso 1.6s ease-in-out infinite",
   },
 });
 
-const Marca = styled("div", {
+const Fotos = styled("div", {
   base: {
     display: "flex",
-    alignItems: "center",
-    gap: "11px",
+    paddingInlineStart: "7px",
 
-    "& img": {
-      width: "44px",
-      height: "44px",
-    },
-
-    "& > span": {
-      display: "flex",
-      flexDirection: "column",
-      lineHeight: 1,
-    },
-
-    "& .callju-wordmark": {
-      fontSize: "1.7em",
-      fontWeight: 800,
-      letterSpacing: "-0.035em",
-    },
-
-    "& small": {
-      marginTop: "5px",
-      fontSize: "0.6em",
-      letterSpacing: "0.26em",
-      textTransform: "uppercase",
-      opacity: 0.32,
+    "& > *": {
+      marginInlineStart: "-7px",
+      borderRadius: "99px",
+      boxShadow: "0 0 0 2px var(--md-sys-color-surface-container)",
     },
   },
 });
 
-/**
- * Entrar no servidor: discreto de proposito.
- *
- * Era um botao inteiro no degrade, gritando mais que tudo em volta. Agora e um
- * bloco de vidro com um fio da cor da marca, que acende ao passar o mouse.
- */
-const Entrar = styled("button", {
+const Selo = styled("span", {
   base: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-
-    padding: "13px 16px",
-    borderRadius: "14px",
-    border: "1px solid var(--callju-accent-line)",
-    background: "var(--callju-accent-soft)",
-    color: "var(--callju-accent-claro)",
-
-    font: "inherit",
-    textAlign: "start",
-    cursor: "pointer",
-    transition:
-      "background var(--mov-toque), border-color var(--mov-toque), transform var(--mov-toque)",
-
-    "& > span": {
-      flex: 1,
-      minWidth: 0,
-      display: "flex",
-      flexDirection: "column",
-      fontWeight: 700,
-      fontSize: "0.98em",
-      letterSpacing: "-0.01em",
-    },
-
-    "& small": {
-      marginTop: "2px",
-      fontWeight: 400,
-      fontSize: "0.78em",
-      color: "var(--md-sys-color-on-surface-variant)",
-    },
-
-    _hover: {
-      background: "rgba(232, 130, 60, 0.16)",
-      borderColor: "var(--callju-accent)",
-      transform: "translateY(-1px)",
-    },
-
-    "&:active": {
-      transform: "translateY(0)",
-    },
+    width: "38px",
+    height: "38px",
+    flexShrink: 0,
+    display: "grid",
+    placeItems: "center",
+    borderRadius: "12px",
+    color: "#fff",
+    background: "var(--callju-grad)",
   },
 });
 
 const Atalhos = styled("div", {
   base: {
+    width: "100%",
+    maxWidth: "540px",
     display: "flex",
-    gap: "8px",
     flexWrap: "wrap",
+    gap: "8px",
   },
 });
 
 const Atalho = styled("button", {
   base: {
-    flex: "1 1 140px",
+    flex: "1 1 120px",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    gap: "8px",
+    gap: "7px",
 
-    padding: "11px 12px",
+    padding: "10px 12px",
     borderRadius: "12px",
     border: "1px solid rgba(255, 255, 255, 0.07)",
     background: "rgba(255, 255, 255, 0.03)",
     color: "var(--md-sys-color-on-surface-variant)",
 
     font: "inherit",
-    fontSize: "0.85em",
+    fontSize: "0.83em",
     fontWeight: 600,
-    cursor: "pointer",
     whiteSpace: "nowrap",
+    cursor: "pointer",
 
     transition:
       "background var(--mov-toque), color var(--mov-toque), transform var(--mov-toque)",
@@ -605,9 +495,7 @@ const Atalho = styled("button", {
       transform: "translateY(-2px)",
     },
 
-    "&:active": {
-      transform: "translateY(0)",
-    },
+    "&:active": { transform: "translateY(0)" },
   },
 });
 

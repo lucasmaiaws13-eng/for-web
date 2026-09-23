@@ -296,3 +296,33 @@
     transform: none;
   }
 }
+
+/* Luz fraquissima no alto da janela: tira o ar de preto chapado sem colorir
+   nada. Fica atras de tudo e nao recebe clique. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 420px;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    120% 100% at 50% 0%,
+    rgba(232, 130, 60, 0.055),
+    transparent 70%
+  );
+  --callju-fundo-luz: 1;
+}
+
+/* Entrada do quadrinho da call: so opacidade e escala. Deslocar empurrava o
+   conteudo e fazia a barra de rolagem piscar por um instante. */
+@keyframes callju-quadro {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

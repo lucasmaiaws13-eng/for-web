@@ -183,13 +183,7 @@ export function Messages(props: Props) {
    */
   function setMessagesSafely(...messagesArr: MessageInterface[][]) {
     setMessages(
-      messagesArr
-        .flat()
-        // O canal de voz virava uma lista de "fulano iniciou uma chamada",
-        // uma linha por vez que alguem entrou. Nao diz nada que a propria
-        // lista de quem esta na call ja nao mostre, e enterra a conversa.
-        .filter((mensagem) => mensagem.systemMessage?.type !== "call_started")
-        .toSorted((a, b) => b.id.localeCompare(a.id)),
+      messagesArr.flat().toSorted((a, b) => b.id.localeCompare(a.id)),
     );
   }
 
@@ -754,7 +748,12 @@ export function Messages(props: Props) {
       }
     };
 
-    const arr = messages();
+    // O canal de voz virava uma lista de "fulano iniciou uma chamada", uma
+    // linha por vez que alguem entrou. Elas somem daqui, do desenho, e nao da
+    // lista guardada: tirar da lista guardada quebrava a paginacao.
+    const arr = messages().filter(
+      (message) => message.systemMessage?.type !== "call_started",
+    );
     arr.forEach((message, index) => {
       const next = arr[index + 1];
       let tail = true;
