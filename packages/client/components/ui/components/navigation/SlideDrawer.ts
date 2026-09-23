@@ -8,6 +8,14 @@ import {
 
 import { useDevice } from "@revolt/common";
 
+/**
+ * Largura da coluna de icones, que no celular nunca sai da tela.
+ *
+ * E a mesma medida dos botoes da coluna (ver `entryContainer` na ServerList):
+ * mudou la, muda aqui.
+ */
+const TRILHO = 56;
+
 const ANIM_MS = 150,
   VEL_MS = 33, //30Hz velocity update
   VEL_AVG = 5, //Moving avg smoothing
@@ -106,7 +114,7 @@ export class SlideDrawer {
     t = this.touch;
     const dy = tNew.screenY - t.y,
       ds = this.drawer.style,
-      max = -innerWidth;
+      max = -this.vao();
     let dx = tNew.screenX - t.x,
       trig = t.trig;
 
@@ -192,7 +200,7 @@ export class SlideDrawer {
     const ds = this.drawer.style;
     this.setElState(false);
     if (set) {
-      this.ofs = show ? -innerWidth : 0;
+      this.ofs = show ? -this.vao() : 0;
       ds.transition = `transform ${ANIM_MS}ms ease-out`;
       ds.transform = `translateX(${this.ofs}px)`;
       this.sSet(show ? SlideState.SHOWING : SlideState.HIDING);
@@ -212,10 +220,31 @@ export class SlideDrawer {
       : null;
   }
 
-  private setElState(show: boolean) {
+  /**
+   * Quanto a gaveta anda ate sair da frente.
+   *
+   * Nao e a tela inteira: sobra a coluna de icones no canto esquerdo.
+   */
+  private vao() {
+    return innerWidth - TRILHO;
+  }
+
+  /**
+   * @param habilitado Precisa vir de fora enquanto o sinal ainda nao mudou
+   */
+  private setElState(show: boolean, habilitado = this.eGet()) {
     const ds = this.drawer.style;
+    const trilho = habilitado ? TRILHO : 0;
     this.root.style.width = show ? "" : "200vw";
-    ds.marginLeft = show ? "" : "100vw";
+
+    if (!show) {
+      ds.marginLeft = "100vw";
+      ds.width = "";
+    } else {
+      // No computador nao existe gaveta e o conteudo ocupa tudo
+      ds.marginLeft = trilho ? `${trilho}px` : "";
+      ds.width = trilho ? `calc(100% - ${trilho}px)` : "";
+    }
   }
 
   delete() {
@@ -237,8 +266,8 @@ export class SlideDrawer {
       if (!en) this.lShow = this.sGet() === SlideState.SHOWN;
       //Restore show/hide state
       const show = en ? this.lShow : false;
-      this.setElState(!en || show);
-      this.ofs = show ? -innerWidth : 0;
+      this.setElState(!en || show, en);
+      this.ofs = show ? -this.vao() : 0;
       this.eSet(en);
       this.sSet(show ? SlideState.SHOWN : SlideState.HIDDEN);
     }

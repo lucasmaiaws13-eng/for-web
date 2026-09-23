@@ -118,6 +118,27 @@ export const ServerList = (props: Props) => {
   // Ref for floating menu
   const [menuButton, setMenuButton] = createSignal<HTMLDivElement>();
 
+  /**
+   * Tira a lista de conversas da frente.
+   *
+   * No celular ela e uma gaveta que cobre a tela inteira. Sem isso, trocar de
+   * aba muda a pagina atras da gaveta e parece que o toque nao fez nada.
+   * No computador nao existe gaveta e a chamada nao faz efeito nenhum.
+   */
+  function mostrarConteudo() {
+    state.appDrawer()?.setShown(true);
+  }
+
+  /**
+   * Traz a lista de canais de volta pra frente.
+   *
+   * Usado ao trocar de servidor: cair direto num canal, sem ver a lista,
+   * esconde o resto do servidor.
+   */
+  function mostrarLista() {
+    state.appDrawer()?.setShown(false);
+  }
+
   return (
     <ServerListBase>
       <div use:invisibleScrollable={{ direction: "y", class: listBase() }}>
@@ -126,6 +147,7 @@ export const ServerList = (props: Props) => {
             indicator: !props.selectedServer() ? "selected" : undefined,
           })}
           href="/app"
+          onClick={mostrarConteudo}
           use:floating={{
             tooltip: {
               content: `You have ${homeNotifications()} pending friend requests.`,
@@ -150,7 +172,11 @@ export const ServerList = (props: Props) => {
         {/* Minigames, logo abaixo do botao do menu. Fica fixo aqui, e nao
             dentro da lista de servidores, para ninguem precisar procurar. */}
         <Tooltip placement="right" content="Minigames" aria="Minigames">
-          <a class={entryContainer()} href="/minigames">
+          <a
+            class={entryContainer()}
+            href="/minigames"
+            onClick={mostrarConteudo}
+          >
             <Avatar
               size={42}
               fallback={
@@ -169,6 +195,7 @@ export const ServerList = (props: Props) => {
                 class={entryContainer()}
                 use:floating={props.menuGenerator(conversation)}
                 href={`/channel/${conversation.id}`}
+                onClick={mostrarConteudo}
               >
                 <Avatar
                   size={42}
@@ -256,7 +283,10 @@ export const ServerList = (props: Props) => {
                 })}
                 use:floating={props.menuGenerator(entry.item)}
               >
-                <a href={state.layout.getLastActiveServerPath(entry.item.id)}>
+                <a
+                  href={state.layout.getLastActiveServerPath(entry.item.id)}
+                  onClick={mostrarLista}
+                >
                   <Avatar
                     size={42}
                     src={entry.item.iconURL}

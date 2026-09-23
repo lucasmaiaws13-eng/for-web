@@ -576,6 +576,8 @@ export function AndroidModal(props: { aberto: boolean; fechar: () => void }) {
       <a
         class="callju-btn"
         href={LINK_DO_ANDROID}
+        target="_blank"
+        rel="noreferrer"
         style={{
           display: "block",
           width: "100%",
@@ -668,6 +670,8 @@ export function AppModal(props: { aberto: boolean; fechar: () => void }) {
       <a
         class="callju-btn"
         href={LINK_DO_APP}
+        target="_blank"
+        rel="noreferrer"
         style={{
           display: "block",
           width: "100%",

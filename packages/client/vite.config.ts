@@ -46,16 +46,17 @@ export default defineConfig({
         type: "module",
       },
       manifest: {
-        name: "Stoat",
-        short_name: "Stoat",
-        description: "User-first open source chat platform.",
+        name: "Callju",
+        short_name: "Callju",
+        description: "Nosso canto para conversar, jogar e ficar junto.",
+        lang: "pt-BR",
         categories: ["communication", "chat", "messaging"],
         start_url: base,
         scope: pwaScope,
         display_override: ["window-controls-overlay"],
         display: "standalone",
-        background_color: "#101823",
-        theme_color: "#101823",
+        background_color: "#0c0c0e",
+        theme_color: "#0c0c0e",
         icons: [
           {
             src: `${base}assets/web/android-chrome-192x192.png`,
