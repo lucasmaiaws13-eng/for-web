@@ -1,4 +1,4 @@
-import { Accessor, For, Setter, Show, onMount } from "solid-js";
+import { Accessor, For, Setter, Show, createMemo, createSignal, onMount } from "solid-js";
 
 import { styled } from "styled-system/jsx";
 
@@ -24,6 +24,31 @@ export function SettingsSidebar(props: {
   page: Accessor<string | undefined>;
 }) {
   const { navigate } = useSettingsNavigation();
+  const [busca, setBusca] = createSignal("");
+
+  /**
+   * Lista filtrada pela busca.
+   *
+   * A tela de configuracoes cresceu e virou uma lista longa de nomes. Procurar
+   * pelo nome e mais rapido que passar o olho por tudo, e quando o campo esta
+   * vazio nada muda.
+   */
+  const categorias = createMemo(() => {
+    const termo = busca().trim().toLowerCase();
+    const entradas = props.list().entries;
+    if (!termo) return entradas;
+
+    return entradas
+      .map((categoria) => ({
+        ...categoria,
+        entries: categoria.entries.filter((entrada) =>
+          String(entrada.title ?? "")
+            .toLowerCase()
+            .includes(termo),
+        ),
+      }))
+      .filter((categoria) => categoria.entries.length);
+  });
 
   /**
    * Select first page on load
@@ -38,9 +63,16 @@ export function SettingsSidebar(props: {
     <Base class="settings_sidebar">
       <div use:invisibleScrollable>
         <Content class="content">
+          <Campo
+            type="search"
+            placeholder="Buscar nas configurações"
+            value={busca()}
+            onInput={(e) => setBusca(e.currentTarget.value)}
+          />
+
           <Column gap="lg">
             {props.list().prepend}
-            <For each={props.list().entries}>
+            <For each={categorias()}>
               {(category) => (
                 <Show when={!category.hidden}>
                   <Column>
@@ -144,6 +176,37 @@ const Content = styled("div", {
 });
 
 /**
+ * Campo de busca no topo da navegacao
+ */
+const Campo = styled("input", {
+  base: {
+    width: "calc(100% - 12px)",
+    marginBottom: "6px",
+    padding: "9px 12px",
+
+    borderRadius: "12px",
+    border: "1px solid var(--md-sys-color-outline-variant)",
+    background: "var(--md-sys-color-surface-container)",
+    color: "var(--md-sys-color-on-surface)",
+
+    font: "inherit",
+    fontSize: "0.88em",
+
+    transition: "border-color var(--mov-estado), background var(--mov-estado)",
+
+    "&::placeholder": {
+      color: "var(--md-sys-color-on-surface-variant)",
+    },
+
+    "&:focus": {
+      outline: "none",
+      borderColor: "var(--callju-accent-line)",
+      background: "var(--md-sys-color-surface-container-high)",
+    },
+  },
+});
+
+/**
  * Titles for each category
  */
 const CategoryTitle = styled("span", {
@@ -153,11 +216,13 @@ const CategoryTitle = styled("span", {
     textOverflow: "ellipsis",
 
     textTransform: "uppercase",
-    fontSize: "0.75rem",
+    fontSize: "0.68rem",
     fontWeight: 700,
-    margin: "0 8px",
+    letterSpacing: "0.12em",
+    margin: "6px 8px 2px",
     marginInlineEnd: "20px",
 
-    color: "var(--md-sys-color-outline)",
+    color: "var(--md-sys-color-on-surface-variant)",
+    opacity: 0.7,
   },
 });

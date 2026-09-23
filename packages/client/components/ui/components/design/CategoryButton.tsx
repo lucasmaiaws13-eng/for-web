@@ -135,12 +135,23 @@ const Base = styled("a", {
     position: "relative",
 
     gap: "16px",
-    padding: "13px",
-    borderRadius: "var(--borderRadius-md)",
+    padding: "14px 15px",
+    borderRadius: "16px",
+    border: "1px solid var(--md-sys-color-outline-variant)",
 
     userSelect: "none",
     cursor: "pointer",
-    transition: "background-color 0.1s ease-in-out",
+    transition:
+      "background var(--mov-toque), border-color var(--mov-toque), transform var(--mov-toque)",
+
+    _hover: {
+      borderColor: "rgba(255, 255, 255, 0.12)",
+      transform: "translateY(-1px)",
+    },
+
+    "&:active": {
+      transform: "translateY(0)",
+    },
 
     display: "flex",
     alignItems: "center",

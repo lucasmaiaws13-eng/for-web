@@ -147,7 +147,7 @@ export function ParticipantTile(props: TileProps) {
             <Show
               when={isScreenShare() && !assistindo()}
               fallback={
-                <AvatarOnly>
+                <AvatarOnly falando={isSpeaking()}>
                   {/* Fundo tirado da propria foto: a imagem entra ampliada e
                       bem desfocada, entao o que sobra dela sao as cores. Como
                       e a foto da pessoa, cada quadrinho fica com a cara de
@@ -404,7 +404,7 @@ const VeuDoFundo = styled("div", {
     // Escurece o bastante pro nome e os icones continuarem legiveis, e leve
     // o bastante pra cor da pessoa continuar sendo a cor do quadrinho
     background:
-      "linear-gradient(to bottom, rgba(8, 8, 10, 0.18), rgba(8, 8, 10, 0.5))",
+      "linear-gradient(to bottom, rgba(8, 8, 10, 0.16), rgba(8, 8, 10, 0.62))",
   },
 });
 
@@ -423,6 +423,20 @@ const AvatarOnly = styled("div", {
       width: "auto !important",
       height: "30% !important",
       minHeight: "48px",
+
+      // A foto cresce enquanto a pessoa fala. O contorno ja dizia quem esta
+      // falando, mas de longe passava batido; o movimento nao passa.
+      transition: "transform var(--mov-elastico)",
+      transformOrigin: "center",
+    },
+  },
+  variants: {
+    falando: {
+      true: {
+        "& > svg": {
+          transform: "scale(1.09)",
+        },
+      },
     },
   },
 });
@@ -464,6 +478,15 @@ const Overlay = styled("div", {
 const OverlayInner = styled("div", {
   base: {
     minWidth: 0,
+
+    // O nome fica por cima da camada de cor e em branco: por baixo dela, e no
+    // tom apagado da superficie, sumia nas fotos claras
+    position: "relative",
+    zIndex: 2,
+    color: "#fff",
+    fill: "#fff",
+    fontWeight: 600,
+    textShadow: "0 1px 3px rgba(0, 0, 0, 0.7)",
 
     display: "flex",
     alignItems: "center",

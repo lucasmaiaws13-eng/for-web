@@ -51,16 +51,27 @@ const SidebarButtonBase = styled("a", {
     minWidth: 0,
     display: "flex",
     alignItems: "center",
-    padding: "6px 8px",
-    borderRadius: "8px",
+    padding: "8px 10px",
     fontWeight: 500,
     marginInlineEnd: "12px",
     fontSize: "15px",
     userSelect: "none",
-    transition: "background-color 0.1s ease-in-out",
-    color: "var(--md-sys-color-on-surface)",
-    fill: "var(--md-sys-color-on-surface)",
+    transition:
+      "background var(--mov-toque), color var(--mov-estado), transform var(--mov-toque)",
+    color: "var(--md-sys-color-on-surface-variant)",
+    fill: "var(--md-sys-color-on-surface-variant)",
     background: "unset",
+    borderRadius: "12px",
+
+    _hover: {
+      background: "var(--callju-hover)",
+      color: "var(--md-sys-color-on-surface)",
+      fill: "var(--md-sys-color-on-surface)",
+    },
+
+    "&:active": {
+      transform: "scale(0.99)",
+    },
 
     "& svg": {
       flexShrink: 0,
@@ -69,7 +80,11 @@ const SidebarButtonBase = styled("a", {
   variants: {
     "aria-selected": {
       true: {
-        background: "var(--md-sys-color-primary-container)",
+        // Mesma selecao discreta da lista de canais: um degrau de cinza e o
+        // texto na cor da marca
+        background: "var(--callju-selecionado)",
+        color: "var(--callju-accent-claro)",
+        fill: "var(--callju-accent-claro)",
       },
     },
   },

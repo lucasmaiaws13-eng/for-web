@@ -60,13 +60,16 @@ type ScreenShareQuality = Required<
 };
 
 /**
- * Volume (0 a 1) a partir do qual conta como fala. Bem baixo de proposito: o
- * filtro de ruido ja tirou o resto, e o anel precisa acender no primeiro som.
+ * Volume (0 a 1) a partir do qual conta como fala.
+ *
+ * Baixo de proposito. O filtro de ruido ja limpou o que nao e voz, entao o
+ * risco de acender a toa e pequeno, e o custo de exigir voz alta e o anel
+ * perder o comeco da frase, que era a reclamacao.
  */
-const NIVEL_DE_FALA = 0.015;
+const NIVEL_DE_FALA = 0.007;
 
 /** Quanto o anel fica aceso depois do ultimo som, em ms */
-const RABO_DA_FALA = 250;
+const RABO_DA_FALA = 180;
 
 class Voice {
   #settings: VoiceSettings;
@@ -958,7 +961,11 @@ class Voice {
       const amostras = new Uint8Array(analisador.fftSize);
       let ultimaVoz = 0;
 
-      const relogio = setInterval(() => {
+      // Medir a cada quadro, e nao a cada 50 ms: o anel acende junto com a
+      // primeira silaba em vez de no quadro seguinte
+      let vivo = true;
+      const medir = () => {
+        if (!vivo) return;
         analisador.getByteTimeDomainData(amostras);
 
         let soma = 0;
@@ -971,12 +978,16 @@ class Voice {
         const agora = performance.now();
         if (nivel > NIVEL_DE_FALA) ultimaVoz = agora;
         this.#setFalandoLocal(agora - ultimaVoz < RABO_DA_FALA);
-      }, 50);
+
+        requestAnimationFrame(medir);
+      };
+
+      requestAnimationFrame(medir);
 
       this.#medidorLocal = {
         faixa,
         parar: () => {
-          clearInterval(relogio);
+          vivo = false;
           fonte.disconnect();
           contexto.close().catch(() => undefined);
         },
