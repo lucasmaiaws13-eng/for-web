@@ -502,6 +502,107 @@ export function AvisoModal(props: {
 export const LINK_DO_APP =
   "https://github.com/lucasmaiaws13-eng/for-desktop/releases/latest/download/callju-setup.exe";
 
+/** Onde o APK do Android mora: servido pelo proprio site */
+const LINK_DO_ANDROID = "/callju-android.apk";
+
+/**
+ * Aviso do aplicativo de celular.
+ *
+ * O APK e assinado com a chave de depuracao do Android, que e o suficiente pra
+ * instalar no celular mas faz o sistema pedir confirmacao. Melhor explicar isso
+ * antes de a pessoa se assustar com o aviso.
+ */
+export function AndroidModal(props: { aberto: boolean; fechar: () => void }) {
+  return (
+    <Overlay aberto={props.aberto} fechar={props.fechar} largura="440px">
+      <div
+        style={{
+          display: "flex",
+          "align-items": "center",
+          "justify-content": "space-between",
+        }}
+      >
+        <SeloDoModal icone="phone_android" />
+        <BotaoFechar onClick={props.fechar} />
+      </div>
+
+      <h2
+        style={{
+          "font-size": "1.3em",
+          "font-weight": "800",
+          margin: "14px 0 8px",
+          "letter-spacing": "-0.015em",
+        }}
+      >
+        Callju no Android
+      </h2>
+
+      <p style={{ "line-height": "1.62", opacity: "0.78", margin: "0 0 16px" }}>
+        Primeira versão do aplicativo de celular. Ele abre direto, sem passar
+        pelo navegador. Ainda está em teste, então pode ter canto torto: se
+        achar algum, me conta.
+      </p>
+
+      <div
+        style={{
+          padding: "14px 16px",
+          "border-radius": "12px",
+          background: "var(--md-sys-color-surface-container-high)",
+          "border-inline-start": "3px solid var(--callju-accent)",
+          "margin-bottom": "18px",
+        }}
+      >
+        <div
+          style={{
+            "font-weight": "700",
+            "font-size": "0.95em",
+            "margin-bottom": "6px",
+          }}
+        >
+          O Android vai pedir permissão. É esperado.
+        </div>
+        <div style={{ "line-height": "1.6", opacity: "0.78", "font-size": "0.92em" }}>
+          Ao abrir o arquivo baixado, o celular avisa que não instala apps de
+          fora da loja. Toque em <b>Configurações</b> e permita a instalação
+          para o navegador, depois volte e confirme.
+          <br />
+          <br />
+          Ele não está na Play Store porque publicar lá custa e exige conta de
+          desenvolvedor. Por enquanto o app também não manda notificação: pra
+          isso o site continua sendo o melhor caminho no celular.
+        </div>
+      </div>
+
+      <a
+        class="callju-btn"
+        href={LINK_DO_ANDROID}
+        style={{
+          display: "block",
+          width: "100%",
+          padding: "13px",
+          "font-size": "0.98em",
+          "text-align": "center",
+          "text-decoration": "none",
+          "box-sizing": "border-box",
+        }}
+      >
+        Baixar para Android
+      </a>
+
+      <p
+        style={{
+          "text-align": "center",
+          opacity: "0.42",
+          "font-size": "0.85em",
+          margin: "16px 0 0",
+        }}
+      >
+        No iPhone ainda não tem app. O site funciona igual por lá.
+      </p>
+    </Overlay>
+  );
+}
+
 export function AppModal(props: { aberto: boolean; fechar: () => void }) {
   return (
     <Overlay aberto={props.aberto} fechar={props.fechar} largura="440px">

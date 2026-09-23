@@ -10,7 +10,13 @@ import { useState } from "@revolt/state";
 import { Avatar, Button, Header, main } from "@revolt/ui";
 import { Symbol } from "@revolt/ui/components/utils/Symbol";
 
-import { AppModal, AvisoModal, GuiaModal, PixModal } from "./CalljuModals";
+import {
+  AndroidModal,
+  AppModal,
+  AvisoModal,
+  GuiaModal,
+  PixModal,
+} from "./CalljuModals";
 import { HeaderIcon } from "./common/CommonHeader";
 
 // >>> TROQUE AQUI pela sua chave Pix (CPF, telefone, email ou aleatoria)
@@ -105,6 +111,7 @@ export function HomePage() {
   const [pixAberto, setPixAberto] = createSignal(false);
   const [appAberto, setAppAberto] = createSignal(false);
   const [avisoAberto, setAvisoAberto] = createSignal(false);
+  const [androidAberto, setAndroidAberto] = createSignal(false);
 
   // Um relogio lento so pra home reler o que esta acontecendo: quem entrou na
   // call, quem ficou online. Sem isso a tela envelhece parada na frente da
@@ -297,6 +304,10 @@ export function HomePage() {
             <Symbol size={18}>desktop_windows</Symbol>
             App pro PC
           </Atalho>
+          <Atalho onClick={() => setAndroidAberto(true)}>
+            <Symbol size={18}>phone_android</Symbol>
+            App pro Android
+          </Atalho>
           <Atalho
             onClick={() =>
               openModal({ type: "create_group_or_server", client: client()! })
@@ -332,6 +343,10 @@ export function HomePage() {
           chave={CHAVE_PIX}
         />
         <AppModal aberto={appAberto()} fechar={() => setAppAberto(false)} />
+        <AndroidModal
+          aberto={androidAberto()}
+          fechar={() => setAndroidAberto(false)}
+        />
         <AvisoModal
           aberto={avisoAberto()}
           fechar={() => setAvisoAberto(false)}
