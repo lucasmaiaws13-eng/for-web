@@ -229,10 +229,18 @@
   height: 10px;
 }
 *::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  /* Invisivel ate o mouse entrar na area que rola: barra aparecendo sozinha
+     no meio de uma animacao suja a tela inteira */
+  background: transparent;
   border: 3px solid transparent;
   background-clip: padding-box;
   border-radius: 999px;
+  transition: background 160ms ease;
+}
+*:hover::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border: 3px solid transparent;
+  background-clip: padding-box;
 }
 *::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.22);
@@ -325,4 +333,14 @@ body::before {
     opacity: 1;
     transform: none;
   }
+}
+
+/* Dentro do quadro da call a barra nunca aparece: o conteudo se reorganiza
+   sozinho e a barra so piscava durante as animacoes */
+.callju-sem-barra {
+  scrollbar-width: none;
+}
+.callju-sem-barra::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }

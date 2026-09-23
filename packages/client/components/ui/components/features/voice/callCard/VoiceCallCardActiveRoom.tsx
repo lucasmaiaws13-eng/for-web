@@ -150,7 +150,12 @@ function Participants() {
   });
 
   return (
-    <Call ref={callRef} class={voice.focusId() ? "" : scrollableStyles()}>
+    <Call
+      ref={callRef}
+      class={
+        (voice.focusId() ? "" : scrollableStyles()) + " callju-sem-barra"
+      }
+    >
       {/* Enquanto a conexao nao fecha, a pessoa ja se ve na chamada.
           A troca entre esperar e estar na call e uma passagem: a foto piscando
           sai crescendo e sumindo enquanto o quadrinho entra. Antes um sumia e

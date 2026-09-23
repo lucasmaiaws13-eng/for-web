@@ -374,9 +374,9 @@ const ConviteLive = styled("div", {
 
 const FundoDaFoto = styled("div", {
   base: {
-    gridArea: "1/1",
-    width: "100%",
-    height: "100%",
+    position: "absolute",
+    inset: 0,
+    zIndex: 0,
 
     backgroundSize: "cover",
     backgroundPosition: "center",
@@ -398,9 +398,9 @@ const FundoDaFoto = styled("div", {
  */
 const VeuDoFundo = styled("div", {
   base: {
-    gridArea: "1/1",
-    width: "100%",
-    height: "100%",
+    position: "absolute",
+    inset: 0,
+    zIndex: 0,
     // Escurece o bastante pro nome e os icones continuarem legiveis, e leve
     // o bastante pra cor da pessoa continuar sendo a cor do quadrinho
     background:
