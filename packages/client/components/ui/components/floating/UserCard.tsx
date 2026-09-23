@@ -16,13 +16,17 @@ const base = cva({
     // padding: "var(--gap-md)",
 
     color: "var(--md-sys-color-on-surface)",
-    background: "var(--md-sys-color-surface-container-high)",
-    boxShadow: "0 0 3px var(--md-sys-color-shadow)",
+    // Mesma placa de vidro da home
+    background: "rgba(22, 22, 26, 0.9)",
+    backdropFilter: "blur(20px) saturate(1.2)",
+    border: "1px solid rgba(255, 255, 255, 0.09)",
+    boxShadow:
+      "inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 20px 46px rgba(0, 0, 0, 0.5)",
 
     width: "340px",
     height: "400px",
 
-    borderRadius: "var(--borderRadius-xl)",
+    borderRadius: "20px",
   },
 });
 

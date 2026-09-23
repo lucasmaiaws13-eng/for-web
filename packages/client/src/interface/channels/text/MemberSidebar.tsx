@@ -274,8 +274,15 @@ const Container = styled("div", {
  */
 const CategoryTitle = styled("div", {
   base: {
-    padding: "28px 14px 0",
-    color: "var(--md-sys-color-on-surface)",
+    padding: "22px 14px 4px",
+    // Titulo de secao no mesmo tom do resto: maiusculas pequenas, espacadas e
+    // em cinza claro, sem competir com os nomes
+    textTransform: "uppercase",
+    letterSpacing: "0.12em",
+    fontSize: "0.68rem",
+    fontWeight: 700,
+    color: "var(--md-sys-color-on-surface-variant)",
+    opacity: 0.75,
     display: "flex",
     alignItems: "center",
     gap: "6px",

@@ -214,8 +214,12 @@ const cartao = {
   width: "100%",
   "max-width": "560px",
   padding: "20px",
-  "border-radius": "16px",
-  background: "var(--md-sys-color-surface-container-high)",
+  "border-radius": "20px",
+  border: "1px solid rgba(255, 255, 255, 0.08)",
+  background: "rgba(255, 255, 255, 0.035)",
+  "box-shadow":
+    "inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 14px 36px rgba(0, 0, 0, 0.35)",
+  "backdrop-filter": "blur(18px) saturate(1.2)",
   "box-sizing": "border-box",
 } as const;
 

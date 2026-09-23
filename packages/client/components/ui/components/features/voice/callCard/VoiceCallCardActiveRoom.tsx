@@ -26,6 +26,26 @@ export function VoiceCallCardActiveRoom() {
 
   return (
     <View collapsed={collapsed()} fullscreen={telaCheia()}>
+      {/* No celular o navegador segura o som ate a pessoa tocar na tela. Sem
+          este aviso ela entra na call, nao ouve ninguem e acha que o Callju
+          esta quebrado. */}
+      <Show when={voice.audioBloqueado()}>
+        <Aviso>
+          <Symbol size={20}>volume_off</Symbol>
+          <span>O seu navegador está segurando o som da call.</span>
+          <button class="callju-btn" onClick={() => voice.liberarAudio()}>
+            Tocar o áudio
+          </button>
+        </Aviso>
+      </Show>
+
+      <Show when={voice.problemaNoMicrofone()}>
+        <Aviso problema>
+          <Symbol size={20}>mic_off</Symbol>
+          <span>{voice.problemaNoMicrofone()}</span>
+        </Aviso>
+      </Show>
+
       <Participants />
       <Show
         when={telaCheia()}
@@ -270,6 +290,45 @@ const View = styled("div", {
         padding: 0,
         gap: 0,
         background: "#000",
+      },
+    },
+  },
+});
+
+const Aviso = styled("div", {
+  base: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    flexShrink: 0,
+
+    margin: "0 var(--gap-md)",
+    padding: "10px 14px",
+    borderRadius: "14px",
+
+    border: "1px solid var(--callju-accent-line)",
+    background: "var(--callju-accent-soft)",
+    color: "var(--callju-accent-claro)",
+    fontSize: "0.86em",
+    fontWeight: 600,
+
+    "& span": {
+      flex: 1,
+      minWidth: 0,
+    },
+
+    "& button": {
+      padding: "7px 14px",
+      fontSize: "0.9em",
+      whiteSpace: "nowrap",
+    },
+  },
+  variants: {
+    problema: {
+      true: {
+        borderColor: "rgba(255, 180, 171, 0.35)",
+        background: "rgba(255, 180, 171, 0.1)",
+        color: "#ffb4ab",
       },
     },
   },

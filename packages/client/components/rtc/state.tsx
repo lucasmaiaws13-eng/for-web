@@ -142,6 +142,20 @@ class Voice {
   /** Medicao em andamento do proprio microfone */
   #medidorLocal?: { faixa: MediaStreamTrack; parar: () => void };
 
+  /**
+   * Se o navegador esta segurando o som que chega.
+   *
+   * Celular (e as vezes o navegador de mesa) so deixa tocar som depois de um
+   * toque na tela. Enquanto isso a pessoa fica na call sem ouvir ninguem, sem
+   * nenhuma pista do motivo. Com este sinal a tela mostra o aviso e o botao.
+   */
+  audioBloqueado: Accessor<boolean>;
+  #setAudioBloqueado: Setter<boolean>;
+
+  /** Ultimo problema com o microfone, pra tela poder explicar */
+  problemaNoMicrofone: Accessor<string | undefined>;
+  #setProblemaNoMicrofone: Setter<string | undefined>;
+
   private sound: SoundController;
   private device: Device;
 
@@ -210,6 +224,16 @@ class Voice {
     const [falandoLocal, setFalandoLocal] = createSignal(false);
     this.falandoLocal = falandoLocal;
     this.#setFalandoLocal = setFalandoLocal;
+
+    const [audioBloqueado, setAudioBloqueado] = createSignal(false);
+    this.audioBloqueado = audioBloqueado;
+    this.#setAudioBloqueado = setAudioBloqueado;
+
+    const [problemaNoMicrofone, setProblemaNoMicrofone] = createSignal<
+      string | undefined
+    >();
+    this.problemaNoMicrofone = problemaNoMicrofone;
+    this.#setProblemaNoMicrofone = setProblemaNoMicrofone;
 
     const inst = useInstance();
     this.instancia = inst;
@@ -374,6 +398,11 @@ class Voice {
 
     room.addListener("disconnected", () => this.#setState("DISCONNECTED"));
 
+    // O LiveKit avisa quando o navegador solta ou segura o som que chega
+    room.addListener("audioPlaybackChanged", () => {
+      this.#setAudioBloqueado(!room.canPlaybackAudio);
+    });
+
     // O LiveKit avisa todo mundo quando um atributo muda, e quem entra depois
     // ja recebe os atributos atuais junto da lista de participantes. Por isso
     // atributo, e nao mensagem solta: mensagem quem chega atrasado perde.
@@ -480,6 +509,11 @@ class Voice {
       autoSubscribe: false,
     });
     marcar("conectado");
+
+    // Entrar na call e um clique, e clique conta como permissao pra tocar som.
+    // Tentar aqui resolve o caso comum; se o navegador recusar, o sinal acende
+    // e a tela oferece o botao.
+    await this.liberarAudio();
   }
 
   /**
@@ -998,6 +1032,40 @@ class Voice {
     }
   }
 
+  /**
+   * Pede ao navegador pra soltar o som que chega.
+   *
+   * Precisa acontecer dentro de um gesto da pessoa (um clique, um toque). Se
+   * nao der, o sinal fica ligado e a tela mostra o botao pra tentar de novo.
+   */
+  async liberarAudio() {
+    const room = this.room();
+    if (!room) return;
+
+    try {
+      await room.startAudio();
+      this.#setAudioBloqueado(!room.canPlaybackAudio);
+    } catch {
+      this.#setAudioBloqueado(true);
+    }
+  }
+
+  /**
+   * Traduz a falha do microfone pra uma frase que a pessoa entenda.
+   */
+  #explicarMicrofone(erro: unknown) {
+    const nome = (erro as { name?: string })?.name;
+
+    if (nome === "NotAllowedError")
+      return "O navegador bloqueou o microfone. Libere o acesso ao microfone nas permissões do site e tente de novo.";
+    if (nome === "NotFoundError")
+      return "Nenhum microfone foi encontrado neste aparelho.";
+    if (nome === "NotReadableError")
+      return "Outro aplicativo está usando o microfone. Feche ele e tente de novo.";
+
+    return "Não consegui abrir o microfone. Tente de novo em instantes.";
+  }
+
   async reconciliarMicrofone() {
     const room = this.room();
     if (!room || !this.speakingPermission) return;
@@ -1013,6 +1081,7 @@ class Voice {
       }
     } catch (e) {
       console.warn("[callju] nao consegui ajustar o microfone", e);
+      this.#setProblemaNoMicrofone(this.#explicarMicrofone(e));
     }
   }
 
